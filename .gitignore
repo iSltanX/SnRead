@@ -1,0 +1,8 @@
+.DS_Store
+dist/
+*.crx
+*.pem
+tests/artifacts/
+
+# Editor / agent tooling, not part of the extension.
+.claude/

@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="system">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>إدارة المواقع — SnFont</title>
+    <link rel="stylesheet" href="./options.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#site-editor">انتقل إلى إعدادات الموقع</a>
+
+    <main class="app-shell" aria-labelledby="page-title">
+      <header class="topbar">
+        <div class="brand-lockup">
+          <span class="brand-mark" aria-hidden="true" dir="ltr"><span>Sn</span><i></i></span>
+          <div class="brand-copy">
+            <p class="eyebrow" dir="ltr">SnFont</p>
+            <h1 id="page-title">إدارة المواقع</h1>
+          </div>
+        </div>
+
+        <div class="topbar-actions" role="group" aria-label="إجراءات البيانات">
+          <button class="icon-button" id="theme-toggle" type="button" data-theme-toggle>
+            <span id="theme-toggle-icon" data-icon="monitor" data-icon-size="18"></span>
+            <span class="sn-sr-only" id="theme-toggle-label">مظهر الأداة: يتبع النظام</span>
+          </button>
+          <button class="button button-quiet" id="export-button" type="button">
+            <span data-icon="download" data-icon-size="18"></span>
+            تصدير
+          </button>
+          <button class="button button-quiet" id="import-button" type="button">
+            <span data-icon="upload" data-icon-size="18"></span>
+            استيراد
+          </button>
+          <input id="import-file" type="file" accept="application/json,.json" hidden />
+          <button class="button button-danger" id="reset-button" type="button">إعادة الضبط</button>
+        </div>
+      </header>
+
+      <p class="page-intro">
+        خصّص تجربة القراءة لكل موقع، أو استثنِ المواقع التي تريد إبقاءها كما صُممت.
+      </p>
+
+      <section class="settings-window" aria-label="إدارة إعدادات المواقع">
+        <aside class="sites-panel" aria-labelledby="sites-title">
+          <div class="panel-heading">
+            <div>
+              <h2 id="sites-title">المواقع</h2>
+              <span class="site-count" id="site-count">0 مواقع</span>
+            </div>
+          </div>
+
+          <div class="search-field">
+            <span class="search-field__icon" data-icon="search" data-icon-size="17"></span>
+            <label class="sn-sr-only" for="site-search">ابحث عن موقع</label>
+            <input id="site-search" type="search" inputmode="url" autocomplete="off" placeholder="ابحث عن موقع…" />
+          </div>
+
+          <form class="add-site-form" id="add-site-form" novalidate>
+            <label for="site-address">أضف موقعًا</label>
+            <div class="add-site-row">
+              <input id="site-address" type="text" inputmode="url" autocomplete="url" spellcheck="false" placeholder="example.com" aria-describedby="address-error" aria-invalid="false" required />
+              <button class="icon-button icon-button-accent" type="submit" aria-label="إضافة الموقع" title="إضافة الموقع">
+                <span data-icon="plus" data-icon-size="18"></span>
+              </button>
+            </div>
+            <p class="field-error" id="address-error" role="alert"></p>
+          </form>
+
+          <nav class="site-list-wrap" aria-label="المواقع المحفوظة">
+            <ul class="site-list" id="site-list"></ul>
+            <div class="empty-list" id="empty-list" hidden>
+              <span class="empty-glyph" aria-hidden="true">Aa</span>
+              <p>لا توجد مواقع بعد</p>
+              <span>أضف عنوانًا لتخصيصه أو استثنائه.</span>
+            </div>
+          </nav>
+        </aside>
+
+        <section class="editor-panel" id="site-editor" aria-labelledby="editor-title" tabindex="-1">
+          <div class="editor-empty" id="editor-empty">
+            <div class="editor-empty-icon" aria-hidden="true">أ</div>
+            <h2>اختر موقعًا لتعديله</h2>
+            <p>يمكنك ضبط الخطوط والحجم والوضع لكل موقع بصورة مستقلة.</p>
+          </div>
+
+          <div class="editor-content" id="editor-content" hidden>
+            <header class="editor-header">
+              <div class="site-identity">
+                <span class="site-avatar" id="site-avatar" aria-hidden="true"></span>
+                <div>
+                  <p class="editor-kicker">إعدادات خاصة بهذا الموقع</p>
+                  <h2 id="editor-title" dir="ltr"></h2>
+                </div>
+              </div>
+              <button class="icon-button delete-site" id="delete-site" type="button" aria-label="حذف الموقع" title="حذف الموقع">
+                <span data-icon="trash" data-icon-size="18"></span>
+              </button>
+            </header>
+
+            <div class="editor-grid">
+              <div class="control-stack">
+                <section class="preference-group" aria-labelledby="behavior-title">
+                  <div class="group-title-row">
+                    <div>
+                      <h3 id="behavior-title">سلوك الإضافة</h3>
+                      <p>حدد ما إذا كانت التحسينات تعمل على هذا الموقع.</p>
+                    </div>
+                  </div>
+
+                  <div class="preference-row">
+                    <span>
+                      <strong>تشغيل SnFont هنا</strong>
+                      <small>عند الإيقاف يبقى الموقع بخطوطه الأصلية</small>
+                    </span>
+                    <label class="switch">
+                      <input id="site-enabled" type="checkbox" />
+                      <span class="switch-track" aria-hidden="true"></span>
+                      <span class="sn-sr-only">تشغيل SnFont على هذا الموقع</span>
+                    </label>
+                  </div>
+
+                  <div class="preference-row">
+                    <span>
+                      <strong>استثناء الموقع</strong>
+                      <small>عدم تعديل الموقع بأي شكل</small>
+                    </span>
+                    <label class="switch">
+                      <input id="site-excluded" type="checkbox" />
+                      <span class="switch-track" aria-hidden="true"></span>
+                      <span class="sn-sr-only">استثناء هذا الموقع</span>
+                    </label>
+                  </div>
+                </section>
+
+                <fieldset class="preference-group" id="override-controls">
+                  <legend>تخصيص القراءة</legend>
+
+                  <label class="select-row" for="arabic-font">
+                    <span><strong>الخط العربي</strong><small>للنصوص العربية</small></span>
+                    <span class="select-control">
+                      <select id="arabic-font">
+                        <option value="inherit">الإعداد العام</option>
+                        <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+                        <option value="Cairo">Cairo</option>
+                        <option value="Almarai">Almarai</option>
+                      </select>
+                      <span class="select-control__chevron" data-icon="chevron-down" data-icon-size="16"></span>
+                    </span>
+                  </label>
+
+                  <label class="select-row" for="english-font">
+                    <span><strong>الخط الإنجليزي</strong><small>للنصوص اللاتينية</small></span>
+                    <span class="select-control">
+                      <select id="english-font">
+                        <option value="inherit">الإعداد العام</option>
+                        <option value="Inter">Inter</option>
+                        <option value="SF Pro">SF Pro</option>
+                        <option value="Helvetica">Helvetica</option>
+                      </select>
+                      <span class="select-control__chevron" data-icon="chevron-down" data-icon-size="16"></span>
+                    </span>
+                  </label>
+
+                  <label class="select-row" for="reading-mode">
+                    <span><strong>الوضع</strong><small>نمط العرض لهذا الموقع</small></span>
+                    <span class="select-control">
+                      <select id="reading-mode">
+                        <option value="inherit">الإعداد العام</option>
+                        <option value="design">التصميم</option>
+                        <option value="reading">القراءة</option>
+                      </select>
+                      <span class="select-control__chevron" data-icon="chevron-down" data-icon-size="16"></span>
+                    </span>
+                  </label>
+
+                  <div class="range-row">
+                    <div class="range-label">
+                      <label for="font-size"><strong>حجم الخط</strong></label>
+                      <output id="font-size-output" for="font-size" aria-live="off">الافتراضي</output>
+                    </div>
+                    <div class="range-control">
+                      <span aria-hidden="true">A</span>
+                      <input id="font-size" type="range" min="9" max="32" step="1" value="9" />
+                      <span class="range-large" aria-hidden="true">A</span>
+                    </div>
+                    <small class="range-help">أقصى اليمين «الافتراضي»، ثم من 10 إلى 32 بكسل.</small>
+                  </div>
+                </fieldset>
+              </div>
+
+              <aside class="preview-card" aria-labelledby="preview-title">
+                <div class="preview-topline">
+                  <span id="preview-title">معاينة حيّة</span>
+                  <span class="live-dot">مباشر</span>
+                </div>
+                <div class="preview-surface" id="preview-surface">
+                  <p class="preview-ar" id="preview-ar">القراءة رحلة تبدأ بحرف واضح.</p>
+                  <p class="preview-en" id="preview-en" dir="ltr">A clear typeface makes every idea easier to follow.</p>
+                  <div class="preview-rule" aria-hidden="true"></div>
+                  <small>SnFont يطبّق كل خط حسب لغة النص.</small>
+                </div>
+                <p class="save-status" id="save-status" data-state="idle" role="status">
+                  <span class="save-status__dot" aria-hidden="true"></span>
+                  <span id="save-status-text">لا توجد تغييرات غير محفوظة</span>
+                </p>
+              </aside>
+            </div>
+
+            <div class="editor-actions" id="editor-actions">
+              <p class="editor-actions__hint" id="editor-actions-hint">
+                التغييرات معاينة مؤقتة حتى تحفظها.
+              </p>
+              <div class="editor-actions__buttons">
+                <button class="button button-quiet" id="discard-site" type="button" disabled>تجاهل التغييرات</button>
+                <button class="button button-primary" id="save-site" type="button" disabled>
+                  <span data-icon="check" data-icon-size="17"></span>
+                  حفظ التخصيص
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </section>
+      <footer class="page-footer">
+        <p class="page-footer__credit">
+          تطوير وتصميم: <strong>سلطان</strong>
+        </p>
+        <a
+          class="page-footer__link"
+          href="https://github.com/iSltanX"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span data-icon="external-link" data-icon-size="15"></span>
+          <span>صفحة المشروع</span>
+        </a>
+      </footer>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <script type="module" src="./options.js"></script>
+  </body>
+</html>

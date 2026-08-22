@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Application without an article</title>
+    <style>
+      body { margin: 0; color: #202124; background: #ffffff; font-family: Arial, sans-serif; }
+      .topbar { display: flex; align-items: center; gap: 12px; padding: 16px; color: white; background: #315a8a; }
+      main { display: grid; grid-template-columns: 260px minmax(0, 1fr); min-height: 700px; }
+      aside { padding: 24px; background: #eef3f8; }
+      .dashboard { padding: 24px; }
+      .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+      .card { min-height: 180px; padding: 20px; border: 1px solid #bac7d5; background: #ffffff; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar" role="banner"><strong>Analytics App</strong><nav><button>Overview</button><button>Reports</button></nav></header>
+    <main id="dashboard-main">
+      <aside id="dashboard-sidebar"><h2>Filters</h2><label>Search <input type="search"></label><p>Sidebar instructions and application state.</p></aside>
+      <section class="dashboard">
+        <div role="toolbar"><button>Export</button><button>Share</button><button>Refresh</button></div>
+        <div class="cards">
+          <section class="card"><h2>Visitors</h2><p>Dashboard explanatory copy can be long, but it is not a continuous article and must not trigger reading layout changes.</p></section>
+          <section class="card"><h2>Conversion</h2><p>Application cards, filters, controls, and data summaries remain outside the safe prose policy even when their combined text is lengthy.</p></section>
+          <section class="card"><h2>Retention</h2><p>This content belongs to a multi-column interactive layout, so no fallback root, max-width, typography marker, or automatic direction should be added.</p></section>
+          <section class="card"><h2>Revenue</h2><p>The main element is explicitly a grid and contains a direct aside, satisfying two independent application-layout veto conditions.</p></section>
+        </div>
+      </section>
+    </main>
+    <script src="../harness/page-mock.js"></script>
+    <script src="../../src/content/content.js"></script>
+  </body>
+</html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="ar" dir="rtl" data-theme="system">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>SnFont</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="app" id="app" aria-busy="true">
+      <header class="app-header">
+        <div class="brand">
+          <span class="brand__mark" aria-hidden="true" dir="ltr"><span>Sn</span><i></i></span>
+          <div class="brand__copy">
+            <h1 dir="ltr">SnFont</h1>
+            <p>مساعد القراءة الذكي</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <div class="appearance" role="group" aria-label="مظهر الأداة" id="appearance">
+            <button type="button" class="appearance__item" data-theme-toggle data-theme="light" aria-pressed="false" title="نهاري">
+              <span data-icon="sun" data-icon-size="14"></span>
+              <span class="sn-sr-only">مظهر نهاري</span>
+            </button>
+            <button type="button" class="appearance__item" data-theme-toggle data-theme="system" aria-pressed="true" title="يتبع النظام">
+              <span data-icon="monitor" data-icon-size="14"></span>
+              <span class="sn-sr-only">يتبع مظهر النظام</span>
+            </button>
+            <button type="button" class="appearance__item" data-theme-toggle data-theme="dark" aria-pressed="false" title="ليلي">
+              <span data-icon="moon" data-icon-size="14"></span>
+              <span class="sn-sr-only">مظهر ليلي</span>
+            </button>
+          </div>
+
+          <label class="switch" id="enabled-switch">
+            <span class="sn-sr-only">تشغيل تحسين الخطوط</span>
+            <input id="enabled" type="checkbox" data-setting="enabled">
+            <span class="switch__track" aria-hidden="true"></span>
+          </label>
+        </div>
+      </header>
+
+      <section class="tab-context" aria-label="الموقع الحالي">
+        <span class="site-dot" id="site-dot" aria-hidden="true"></span>
+        <span class="tab-context__label" id="site-label">جارٍ التعرّف على الموقع…</span>
+        <span class="save-state" id="save-state" aria-hidden="true">جاهز</span>
+      </section>
+
+      <div class="scroll-region" id="scroll-region">
+        <p class="notice" id="notice" hidden>
+          <span class="notice__icon" data-icon="info" data-icon-size="15"></span>
+          <span class="notice__text" id="notice-text"></span>
+        </p>
+
+        <section class="section" aria-labelledby="modes-title">
+          <div class="section-heading">
+            <h2 id="modes-title">وضع المعالجة</h2>
+            <span class="section-heading__note">لكل المواقع</span>
+          </div>
+
+          <div class="mode-grid" role="group" aria-label="وضع معالجة الصفحة">
+            <button class="mode-button" type="button" data-mode="reading" aria-pressed="false">
+              <span data-icon="book" data-icon-size="14"></span>
+              <span class="mode-button__label">قراءة</span>
+            </button>
+            <button class="mode-button" type="button" data-mode="design" aria-pressed="true">
+              <span data-icon="paintbrush" data-icon-size="14"></span>
+              <span class="mode-button__label">تصميم</span>
+            </button>
+          </div>
+          <p class="section-hint" id="mode-hint">وضع التصميم يحسّن الخطوط دون لمس تخطيط الصفحة.</p>
+        </section>
+
+        <section class="section font-section" aria-labelledby="fonts-title">
+          <h2 id="fonts-title" class="sn-sr-only">اختيار الخطوط</h2>
+
+          <label class="field">
+            <span class="field__label">خط الويب الإنجليزي</span>
+            <span class="select-wrap">
+              <select id="english-font" data-setting="englishFont">
+                <option value="Inter">Inter — محسّن للقراءة</option>
+                <option value="SF Pro">SF Pro — خط النظام</option>
+                <option value="Helvetica">Helvetica</option>
+              </select>
+              <span class="select-wrap__chevron" data-icon="chevron-down" data-icon-size="16"></span>
+            </span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">خط الويب العربي</span>
+            <span class="select-wrap">
+              <select id="arabic-font" data-setting="arabicFont">
+                <option value="Noto Sans Arabic">Noto Sans Arabic</option>
+                <option value="Cairo">Cairo</option>
+                <option value="Almarai">Almarai</option>
+              </select>
+              <span class="select-wrap__chevron" data-icon="chevron-down" data-icon-size="16"></span>
+            </span>
+          </label>
+
+          <div class="type-preview" aria-label="معاينة مباشرة للخطوط">
+            <span class="type-preview__eyebrow">معاينة مباشرة</span>
+            <p class="type-preview__arabic" id="preview-arabic" lang="ar">قراءة أهدأ، وتركيز أوضح<span class="type-caret" aria-hidden="true"></span></p>
+            <p class="type-preview__english" id="preview-english" lang="en" dir="ltr">Designed for calmer reading.</p>
+          </div>
+        </section>
+
+        <section class="section" aria-labelledby="size-title">
+          <div class="section-heading">
+            <h2 id="size-title">حجم الخط</h2>
+            <output class="value-pill" id="font-size-output" for="font-size" aria-live="off">16 px</output>
+          </div>
+
+          <div class="range-line">
+            <span class="range-cap range-cap--small" aria-hidden="true">A</span>
+            <input id="font-size" type="range" min="10" max="32" step="1" value="16" data-setting="fontSize" aria-label="حجم الخط من 10 إلى 32 بكسل">
+            <span class="range-cap range-cap--large" aria-hidden="true">A</span>
+          </div>
+
+          <div class="preset-grid" role="group" aria-label="مستويات حجم الخط">
+            <button type="button" data-size-preset="small" aria-pressed="false"><b>S</b><span>صغير</span></button>
+            <button type="button" data-size-preset="normal" aria-pressed="true"><b>M</b><span>عادي</span></button>
+            <button type="button" data-size-preset="large" aria-pressed="false"><b>L</b><span>كبير</span></button>
+            <button type="button" data-size-preset="huge" aria-pressed="false"><b>XL</b><span>ضخم</span></button>
+            <button type="button" data-size-preset="extraHuge" aria-pressed="false"><b>2XL</b><span>أضخم</span></button>
+          </div>
+        </section>
+
+        <details class="advanced" id="advanced">
+          <summary>
+            <span>تحسينات القراءة</span>
+            <span class="summary-hint" aria-hidden="true">تحكم دقيق</span>
+          </summary>
+
+          <div class="control-list">
+            <label class="range-control" for="line-height">
+              <span class="control-icon" data-icon="align-left" data-icon-size="16"></span>
+              <span class="range-control__copy">
+                <span>ارتفاع السطر</span>
+                <input id="line-height" type="range" min="1.1" max="2.4" step="0.05" value="1.5" data-setting="lineHeight">
+              </span>
+              <output id="line-height-output" for="line-height" aria-live="off">1.50</output>
+            </label>
+
+            <label class="range-control" for="letter-spacing">
+              <span class="control-icon" data-icon="move-horizontal" data-icon-size="16"></span>
+              <span class="range-control__copy">
+                <span>تباعد الحروف</span>
+                <input id="letter-spacing" type="range" min="-0.08" max="0.2" step="0.01" value="0" data-setting="letterSpacing">
+              </span>
+              <output id="letter-spacing-output" for="letter-spacing" aria-live="off">0.00 em</output>
+            </label>
+
+            <label class="range-control" for="text-width">
+              <span class="control-icon" data-icon="maximize" data-icon-size="16"></span>
+              <span class="range-control__copy">
+                <span>عرض مساحة النص</span>
+                <input id="text-width" type="range" min="60" max="120" step="2" value="100" data-setting="textWidth">
+              </span>
+              <output id="text-width-output" for="text-width" aria-live="off">100%</output>
+            </label>
+
+            <label class="toggle-row">
+              <span class="control-icon" data-icon="focus" data-icon-size="16"></span>
+              <span class="toggle-row__copy">
+                <span>تقليل التشويش البصري</span>
+                <small>يهدّئ العناصر الثانوية داخل المقال</small>
+              </span>
+              <span class="switch switch--small">
+                <input id="reduce-noise" type="checkbox" data-setting="reduceVisualNoise">
+                <span class="switch__track" aria-hidden="true"></span>
+              </span>
+            </label>
+          </div>
+          <p class="section-hint" id="reading-only-hint" hidden>عرض النص وتقليل التشويش يعملان في وضع القراءة فقط.</p>
+        </details>
+
+        <section class="site-card" aria-labelledby="site-settings-title">
+          <span class="site-card__icon" data-icon="shield" data-icon-size="17"></span>
+          <div class="site-card__copy">
+            <h2 id="site-settings-title">حماية تصميم هذا الموقع</h2>
+            <p>أضفه إلى الاستثناءات لإيقاف أي تعديل عليه.</p>
+          </div>
+          <label class="switch switch--small">
+            <span class="sn-sr-only">استثناء هذا الموقع</span>
+            <input id="exclude-site" type="checkbox">
+            <span class="switch__track" aria-hidden="true"></span>
+          </label>
+        </section>
+      </div>
+
+      <footer class="app-footer">
+        <span id="tab-status">مفعّل حاليًا في هذا التبويب</span>
+        <div class="footer-actions">
+          <button class="text-button" type="button" id="open-options">
+            <span data-icon="sliders-horizontal" data-icon-size="13"></span>
+            <span>إدارة المواقع</span>
+          </button>
+          <button class="text-button" type="button" id="reset-settings">
+            <span data-icon="rotate-ccw" data-icon-size="13"></span>
+            <span id="reset-label">إعادة الإعداد العام</span>
+          </button>
+        </div>
+      </footer>
+    </main>
+
+    <p class="sn-sr-only" id="announcer" role="status" aria-live="polite"></p>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

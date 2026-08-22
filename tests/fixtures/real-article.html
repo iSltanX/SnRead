@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="utf-8">
+    <title>مقال عربي وإنجليزي طويل</title>
+    <style>
+      body { margin: 0; color: #28231f; background: #f8f4ed; font-family: Arial, sans-serif; }
+      .masthead { padding: 16px 32px; color: #ffffff; background: #17324d; }
+      .story { width: min(92%, 980px); margin: 34px auto; padding: 36px; border: 2px solid #d9c9ae; background: #fffdf8; }
+      .story h1 { margin-top: 0; font-size: 38px; }
+      .story p { font-size: 17px; line-height: 1.65; }
+      .dek { color: #675c50; }
+      .authored-serif { font-family: Georgia, serif; font-style: italic; font-weight: 600; }
+      blockquote { border-inline-start: 4px solid #b77a2b; padding-inline-start: 18px; }
+      a { color: #8d3b1f; }
+    </style>
+  </head>
+  <body>
+    <header class="masthead" role="banner"><strong>مجلة القراءة</strong></header>
+    <article class="story" id="story" itemprop="articleBody">
+      <header>
+        <h1 id="story-title">كيف نصمم تجربة قراءة تحترم الصفحة؟</h1>
+        <p class="dek">مقدمة طويلة تشرح أن تحسين النص يجب أن يبقى داخل المقال وألا يغيّر ألوان الموقع أو عناصر التنقل المحيطة به.</p>
+      </header>
+      <p>تبدأ تجربة القراءة الآمنة باكتشاف مساحة نثر حقيقية تحتوي فقرات مترابطة، ثم تطبيق الإعدادات عليها وحدها مع إبقاء التخطيط العام والأشرطة الجانبية والأزرار كما صممها الموقع الأصلي.</p>
+      <p id="english-paragraph">A safe reading assistant should improve a genuine article while leaving navigation, application chrome, colors, controls, and authored typography completely intact.</p>
+      <p>عندما يجتمع النص العربي مع English phrases داخل الفقرة نفسها، يستطيع المتصفح اختيار الخط المناسب لكل محرف مع الحفاظ على اتجاه الكتلة وفق أول حرف قوي فيها.</p>
+      <p class="authored-serif" id="article-custom">This authored Georgia paragraph must retain its family, italic style, and weight even when the user explicitly enables the reading profile.</p>
+      <blockquote>الهدف ليس استخراج الصفحة أو إعادة تصميمها، بل إنشاء جزيرة قراءة هادئة يمكن اختبار حدودها واستعادتها بالكامل عند إيقاف الإضافة.</blockquote>
+      <p dir="ltr" id="explicit-direction">This paragraph has an explicit direction chosen by the publisher and the extension must never replace or remove it.</p>
+      <figure><figcaption>وصف توضيحي للصورة يبقى جزءًا من النثر الآمن داخل المقال.</figcaption></figure>
+      <pre><code>const pageLayout = 'untouched'</code></pre>
+      <button type="button">اشترك في النشرة</button>
+    </article>
+    <script src="../harness/page-mock.js"></script>
+    <script src="../../src/content/content.js"></script>
+  </body>
+</html>

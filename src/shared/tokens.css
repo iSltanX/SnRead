@@ -1,0 +1,363 @@
+/**
+ * SnFont design tokens — the single source of truth for both extension surfaces.
+ *
+ * Import it first from popup.css and options.css; never redeclare a value below
+ * in a surface stylesheet. The palette mirrors the SnFont Figma identity, and
+ * every semantic role resolves from it so light and dark stay in step.
+ *
+ * Theming contract: `document.documentElement.dataset.theme` is always one of
+ * `light`, `dark`, or `system`. Dark values are declared twice on purpose — once
+ * for the explicit choice and once for the system preference — and
+ * tests/tokens.test.mjs asserts the two blocks stay byte-identical.
+ */
+
+/* ── Font faces ────────────────────────────────────────────────────────────────
+ * Declared once for both surfaces. `SnFont Display` / `SnFont Text` are the UI
+ * families; the four real-name faces exist so any surface can preview a choice
+ * by the same name the user picked. Chromium fetches each file once regardless
+ * of how many families reference it.
+ */
+
+@font-face {
+  font-family: "SnFont Display";
+  src: url("../../assets/fonts/Cairo-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SnFont Text";
+  src: url("../../assets/fonts/Almarai-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "SnFont Text";
+  src: url("../../assets/fonts/Almarai-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Cairo";
+  src: url("../../assets/fonts/Cairo-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Almarai";
+  src: url("../../assets/fonts/Almarai-Regular.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Almarai";
+  src: url("../../assets/fonts/Almarai-Bold.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 700 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Inter";
+  src: url("../../assets/fonts/Inter-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Noto Sans Arabic";
+  src: url("../../assets/fonts/NotoSansArabic-Variable.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+:root {
+  /* ── Brand palette (Figma: Brand Identity & Design System) ───────────────── */
+  --sn-blue-900: #132b49;
+  --sn-blue-800: #152e4f;
+  --sn-blue-700: #1e3a5f; /* Primary Blue */
+  --sn-blue-600: #245b98;
+  --sn-blue-500: #315f8f;
+  --sn-blue-300: #9fc6ee;
+  --sn-blue-100: #e4edf7;
+
+  --sn-amber-700: #7d5104; /* text-safe amber, light surfaces only */
+  --sn-amber-500: #e8a838; /* Accent Amber */
+  --sn-amber-400: #efb64f;
+  --sn-amber-100: #fff5df;
+
+  --sn-ink-900: #1d1d1f; /* Neutral Dark */
+  --sn-ink-100: #f5f5f7; /* Light Soft */
+  --sn-slate-500: #86868b; /* System Slate — decorative only, 3.5:1 on white */
+  --sn-slate-600: #626269; /* text-safe slate, 6.1:1 on white */
+  --sn-white: #ffffff;
+
+  --sn-grey-050: #f7f7f9;
+  --sn-grey-150: #e5e5ea;
+  --sn-grey-200: #dcdfe5;
+  --sn-grey-750: #3a3a3c;
+  --sn-grey-800: #323234;
+  --sn-grey-850: #2c2c2e;
+  --sn-grey-880: #252527;
+  --sn-grey-900: #202022;
+
+  --sn-green-500: #34c759;
+  --sn-green-600: #248a3d;
+  --sn-red-600: #b42318;
+  --sn-red-300: #ff9188;
+  --sn-orange-500: #b26a00;
+
+  /* ── Semantic roles — light ──────────────────────────────────────────────── */
+  color-scheme: light;
+
+  --canvas: var(--sn-ink-100);
+  --surface: var(--sn-white);
+  --surface-raised: var(--sn-white);
+  --surface-sunken: var(--sn-grey-050);
+  --surface-inverted: var(--sn-ink-900);
+
+  --text: var(--sn-ink-900);
+  --text-muted: var(--sn-slate-600);
+  --text-on-accent: var(--sn-white);
+
+  --accent: var(--sn-blue-700);
+  --accent-ink: var(--sn-blue-700); /* accent used as text */
+  --accent-fill: var(--sn-blue-700); /* accent used as a solid ground */
+  --accent-fill-hover: var(--sn-blue-800);
+  --accent-wash: rgb(30 58 95 / 7%);
+
+  --amber: var(--sn-amber-500); /* non-text: bars, carets, edges */
+  --amber-ink: var(--sn-amber-700); /* amber as text — AA on light grounds */
+  --amber-wash: var(--sn-amber-100);
+
+  --border: var(--sn-grey-150);
+  --border-strong: rgb(30 58 95 / 20%);
+  --track: var(--sn-grey-200);
+  --focus-ring: var(--sn-blue-700);
+
+  --success: var(--sn-green-600);
+  --warning: var(--sn-orange-500);
+  --danger: var(--sn-red-600);
+
+  --icon-quiet: var(--sn-slate-500);
+
+  /* The notice banner ground — a real role, not an inline computation, so
+     the Figma variable and the CSS resolve to the same colour. */
+  --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
+  --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
+
+  /* The notice banner ground — a real role, not an inline computation, so the
+     Figma variable and the CSS resolve to the same colour. */
+
+  --shadow-1: 0 1px 3px rgb(19 43 73 / 8%);
+  --shadow-2: 0 12px 32px rgb(19 43 73 / 8%);
+  --shadow-3: 0 18px 54px rgb(19 43 73 / 10%), 0 2px 8px rgb(29 29 31 / 5%);
+
+  /* ── Space scale ─────────────────────────────────────────────────────────── */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 20px;
+  --space-10: 24px;
+  --space-11: 32px;
+  --space-12: 44px;
+
+  /* ── Radius scale ────────────────────────────────────────────────────────── */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-pill: 999px;
+
+  /* ── Type scale — 11px floor, Arabic needs more optical size than Latin ──── */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 15px;
+  --text-lg: 18px;
+  --text-xl: 22px;
+  --text-2xl: 28px;
+
+  --leading-tight: 1.25;
+  --leading-snug: 1.4;
+  --leading-normal: 1.55;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-bold: 700;
+
+  /* Cairo carries display and functional text; Almarai carries body and prose. */
+  --font-display: "SnFont Display", "Cairo", system-ui, sans-serif;
+  --font-body: "SnFont Text", "Almarai", system-ui, sans-serif;
+
+  /* ── Motion ──────────────────────────────────────────────────────────────── */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 160ms;
+
+  /* ── Control geometry ────────────────────────────────────────────────────── */
+  --control-height-sm: 28px;
+  --control-height-md: 36px;
+  --control-height-lg: 44px;
+  --hit-target: 24px;
+}
+
+/* ── Semantic roles — dark (system preference) ─────────────────────────────── */
+/* SNFONT-DARK-BLOCK-START */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    --canvas: var(--sn-grey-900);
+    --surface: var(--sn-grey-850);
+    --surface-raised: var(--sn-grey-800);
+    --surface-sunken: var(--sn-grey-880);
+    --surface-inverted: var(--sn-ink-100);
+
+    --text: var(--sn-ink-100);
+    --text-muted: #b8b8bf;
+    --text-on-accent: var(--sn-white);
+
+    --accent: var(--sn-blue-300);
+    --accent-ink: var(--sn-blue-300);
+    --accent-fill: var(--sn-blue-600);
+    --accent-fill-hover: var(--sn-blue-500);
+    --accent-wash: rgb(159 198 238 / 10%);
+
+    --amber: var(--sn-amber-500);
+    --amber-ink: var(--sn-amber-500);
+    --amber-wash: #3a3224;
+
+    --border: var(--sn-grey-750);
+    --border-strong: rgb(255 255 255 / 22%);
+    --track: #4a4a4e;
+    --focus-ring: var(--sn-amber-500);
+
+    --success: var(--sn-green-500);
+    --warning: #ffb340;
+    --danger: var(--sn-red-300);
+
+    --icon-quiet: #9a9aa0;
+
+    --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
+    --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
+
+
+
+    --shadow-1: 0 1px 3px rgb(0 0 0 / 32%);
+    --shadow-2: 0 12px 32px rgb(0 0 0 / 34%);
+    --shadow-3: 0 20px 62px rgb(0 0 0 / 40%), 0 2px 10px rgb(0 0 0 / 24%);
+  }
+}
+/* SNFONT-DARK-BLOCK-END */
+
+/* ── Semantic roles — dark (explicit choice) ───────────────────────────────── */
+/* SNFONT-DARK-BLOCK-START */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: var(--sn-grey-900);
+  --surface: var(--sn-grey-850);
+  --surface-raised: var(--sn-grey-800);
+  --surface-sunken: var(--sn-grey-880);
+  --surface-inverted: var(--sn-ink-100);
+
+  --text: var(--sn-ink-100);
+  --text-muted: #b8b8bf;
+  --text-on-accent: var(--sn-white);
+
+  --accent: var(--sn-blue-300);
+  --accent-ink: var(--sn-blue-300);
+  --accent-fill: var(--sn-blue-600);
+  --accent-fill-hover: var(--sn-blue-500);
+  --accent-wash: rgb(159 198 238 / 10%);
+
+  --amber: var(--sn-amber-500);
+  --amber-ink: var(--sn-amber-500);
+  --amber-wash: #3a3224;
+
+  --border: var(--sn-grey-750);
+  --border-strong: rgb(255 255 255 / 22%);
+  --track: #4a4a4e;
+  --focus-ring: var(--sn-amber-500);
+
+  --success: var(--sn-green-500);
+  --warning: #ffb340;
+  --danger: var(--sn-red-300);
+
+  --icon-quiet: #9a9aa0;
+
+  --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
+  --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
+
+  --shadow-1: 0 1px 3px rgb(0 0 0 / 32%);
+  --shadow-2: 0 12px 32px rgb(0 0 0 / 34%);
+  --shadow-3: 0 20px 62px rgb(0 0 0 / 40%), 0 2px 10px rgb(0 0 0 / 24%);
+}
+/* SNFONT-DARK-BLOCK-END */
+
+/* ── Shared primitives ─────────────────────────────────────────────────────── */
+
+/* `hidden` must win over any layout display a component sets on itself. */
+[hidden] {
+  display: none !important;
+}
+
+/*
+ * Pinned to the inline start on purpose. Left unpinned it takes its static
+ * position, and a trailing live region then sat ~600px past the popup body —
+ * which set documentElement.scrollWidth to 980 and made Chromium size the
+ * action popup from that instead of the declared 380px.
+ */
+.sn-sr-only {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Every icon inherits its colour from the control it sits in — no filters. */
+.sn-icon {
+  display: block;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.75;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

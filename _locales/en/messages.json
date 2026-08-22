@@ -1,0 +1,23 @@
+{
+  "extensionName": {
+    "message": "SnFont — Smart Reading Assistant"
+  },
+  "extensionDescription": {
+    "message": "Smart Arabic and English fonts with comfortable reading controls that respect website design."
+  },
+  "actionTitle": {
+    "message": "Open SnFont settings"
+  },
+  "commandIncrease": {
+    "message": "Increase reading font size"
+  },
+  "commandDecrease": {
+    "message": "Decrease reading font size"
+  },
+  "commandReset": {
+    "message": "Reset reading font size"
+  },
+  "commandToggle": {
+    "message": "Toggle font enhancement"
+  }
+}

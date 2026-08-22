@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>GitHub-like application grid</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #1f2328; background: #ffffff; font: 14px Arial, sans-serif; }
+      a { color: #0969da; }
+      .site-header { display: flex; gap: 16px; align-items: center; min-height: 64px; padding: 12px 24px; color: #ffffff; background: #24292f; }
+      .site-header nav { display: flex; gap: 14px; }
+      .app-grid { display: grid; grid-template-columns: 280px minmax(0, 1fr); min-height: 720px; }
+      .Layout-sidebar { padding: 24px; border-inline-end: 1px solid #d0d7de; background: #f6f8fa; }
+      .Layout-sidebar ul { padding-inline-start: 20px; }
+      .repo-main { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 24px; padding: 24px; }
+      .repo-tools { display: flex; gap: 8px; margin-bottom: 18px; }
+      .markdown-body { min-width: 0; padding: 28px; border: 1px solid #d0d7de; border-radius: 8px; background: #ffffff; }
+      .markdown-body p { font-size: 15px; line-height: 1.55; }
+      .custom-copy { font-family: Georgia, serif; }
+      .context-panel { padding: 16px; border: 1px solid #d0d7de; background: #f6f8fa; }
+    </style>
+  </head>
+  <body>
+    <header class="site-header" role="banner">
+      <strong>CodeHost</strong>
+      <nav aria-label="Primary"><a href="#pulls">Pull requests</a><a href="#issues">Issues</a></nav>
+      <button type="button">Create</button>
+    </header>
+    <div class="app-grid" id="app-grid">
+      <aside class="Layout-sidebar" id="sidebar" aria-label="Repository sidebar">
+        <h2>Repository</h2>
+        <p id="sidebar-copy">Application navigation must keep its original geometry and typography.</p>
+        <ul><li><a href="#code">Code</a></li><li><a href="#actions">Actions</a></li><li><a href="#security">Security</a></li></ul>
+      </aside>
+      <main class="repo-main" id="repo-main">
+        <section>
+          <div class="repo-tools" role="toolbar" aria-label="Repository tools">
+            <button type="button">Branch</button><button type="button">Go to file</button><button type="button">Code</button>
+          </div>
+          <article class="markdown-body" id="readme">
+            <h1>SnFont repository documentation</h1>
+            <p>This long README paragraph explains the purpose of the project and provides enough natural prose to qualify as a trustworthy reading island without treating the surrounding repository application as part of the article.</p>
+            <p>The second paragraph describes installation, configuration, browser compatibility, and the design principles used to preserve application navigation while improving only the document content selected by the reader.</p>
+            <p>The third paragraph covers maintenance, testing, release practices, accessibility checks, and the behavior expected when content arrives dynamically after the initial application shell has rendered.</p>
+            <p class="custom-copy" id="github-custom">This paragraph deliberately uses Georgia and must preserve that authored typeface in every mode, including the safe reading profile.</p>
+          </article>
+        </section>
+        <aside class="context-panel" aria-label="About this repository"><h2>About</h2><p>Metadata and controls are application UI.</p></aside>
+      </main>
+    </div>
+    <script src="../harness/page-mock.js"></script>
+    <script src="../../src/content/content.js"></script>
+  </body>
+</html>

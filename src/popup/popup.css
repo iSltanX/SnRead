@@ -1,0 +1,945 @@
+@import url("../shared/tokens.css");
+
+/*
+ * The action popup. Every colour, space, radius and size below resolves from
+ * src/shared/tokens.css — if a raw value appears here it is a bug, not a choice.
+ */
+
+:root {
+  /* Switch travel is physical, so mirror it for the RTL document. */
+  --flow-sign: 1;
+}
+
+[dir="rtl"] {
+  --flow-sign: -1;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  /* Chromium caps action popups at 600px tall; the panel sits inside that. */
+  width: 380px;
+  min-width: 380px;
+  height: 600px;
+  min-height: 600px;
+  margin: 0;
+  overflow: hidden;
+  background: var(--canvas);
+}
+
+body {
+  padding: var(--space-5);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button,
+select,
+input,
+output {
+  font: inherit;
+  font-family: var(--font-display);
+}
+
+h1,
+h2,
+summary,
+.field__label,
+.range-control__copy > span,
+.toggle-row__copy > span {
+  font-family: var(--font-display);
+}
+
+button,
+select,
+input[type="range"],
+input[type="checkbox"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button {
+  color: inherit;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────────────── */
+
+.app {
+  display: grid;
+  /* Both axes must be able to shrink: a grid child keeps min-width:auto by
+     default, so a long footer label used to push the whole panel wider than
+     its own 360px and Chromium grew the popup to match. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  width: 360px;
+  height: 580px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2);
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease;
+}
+
+.app > * {
+  min-width: 0;
+}
+
+.app[aria-busy="true"] {
+  opacity: 0.82;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────────── */
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-6) var(--space-8) var(--space-5);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+.brand__mark {
+  position: relative;
+  display: grid;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 26px;
+  place-items: center;
+  border-radius: var(--radius-xs);
+  color: var(--sn-white);
+  background: var(--sn-blue-700);
+  box-shadow: var(--shadow-1), inset 0 0 0 1px rgb(255 255 255 / 13%);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  letter-spacing: -0.055em;
+}
+
+/* The amber cursor bar — the one place the accent is intentionally a shape. */
+.brand__mark i {
+  position: absolute;
+  inset-inline-end: 4px;
+  inset-block-end: 5px;
+  width: 2px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--amber);
+}
+
+.brand__copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.brand h1 {
+  margin: 0;
+  color: var(--text);
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.02em;
+}
+
+.brand p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.icon-button {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease;
+}
+
+.icon-button:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.icon-button:active {
+  background: var(--accent-wash);
+}
+
+/* ── Switch ────────────────────────────────────────────────────────────────── */
+
+.switch {
+  --switch-width: 38px;
+  --switch-height: 22px;
+  --switch-knob: 16px;
+  --switch-travel: calc(var(--switch-width) - var(--switch-knob) - var(--space-2) * 1.5);
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  cursor: pointer;
+}
+
+.switch--small {
+  --switch-width: 34px;
+  --switch-height: 20px;
+  --switch-knob: 14px;
+}
+
+.switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.switch__track {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  background: var(--track);
+  transition: background-color var(--duration-base) ease;
+}
+
+.switch__track::after {
+  content: "";
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: 3px;
+  width: var(--switch-knob);
+  height: var(--switch-knob);
+  border-radius: 50%;
+  background: var(--sn-white);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 25%);
+  /* Physical translate mirrored by --flow-sign so the knob travels the way the
+     document reads: start (right in RTL) when off, end when on. */
+  transform: translate(0, -50%);
+  transition: transform var(--duration-base) var(--ease-out);
+}
+
+.switch input:checked + .switch__track {
+  background: var(--accent-fill);
+}
+
+.switch input:checked + .switch__track::after {
+  transform: translate(calc(var(--switch-travel) * var(--flow-sign)), -50%);
+}
+
+.switch input:focus-visible + .switch__track {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.switch input:disabled + .switch__track {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ── Tab context strip ─────────────────────────────────────────────────────── */
+
+.tab-context {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+  margin-inline: var(--space-8);
+  padding-block: var(--space-3);
+  border-block: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
+.site-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-inline-end: var(--space-3);
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success), transparent 86%);
+}
+
+.app[data-page-state="inactive"] .site-dot {
+  background: var(--warning);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--warning), transparent 86%);
+}
+
+.app[data-page-state="blocked"] .site-dot {
+  background: var(--text-muted);
+  box-shadow: none;
+}
+
+.tab-context__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: ltr;
+  text-align: start;
+}
+
+.save-state {
+  margin-inline-start: auto;
+  padding-inline-start: var(--space-3);
+  color: var(--accent-ink);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+}
+
+.save-state[data-state="saving"] {
+  color: var(--text-muted);
+}
+
+.save-state[data-state="error"] {
+  color: var(--danger);
+}
+
+/* ── Scroll region ─────────────────────────────────────────────────────────── */
+
+.scroll-region {
+  min-height: 0;
+  padding: var(--space-6) var(--space-8) var(--space-8);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.scroll-region::-webkit-scrollbar {
+  width: 5px;
+}
+
+.scroll-region::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-pill);
+  background: var(--border);
+}
+
+.section + .section,
+.section + .advanced,
+.advanced + .site-card,
+.notice + .section {
+  margin-top: var(--space-8);
+}
+
+.section h2,
+.advanced summary,
+.site-card h2 {
+  margin: 0;
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+}
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin-bottom: var(--space-4);
+  color: var(--text-muted);
+}
+
+.section-hint {
+  margin: var(--space-3) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+}
+
+.value-pill {
+  color: var(--accent-ink);
+  direction: ltr;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Notice banner — the panel tells the truth about what it is doing ──────── */
+
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-8);
+  padding: var(--space-5) var(--space-6);
+  border: 1px solid var(--notice-border);
+  border-radius: var(--radius-md);
+  background: var(--notice-bg);
+  color: var(--text);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+}
+
+.notice__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  margin-block-start: 1px;
+  color: var(--warning);
+}
+
+/* ── Appearance ────────────────────────────────────────────────────────────── */
+
+/* A three-way segmented control, the way macOS states an appearance choice:
+   the options are visible, and the current one is obvious without a tooltip. */
+.appearance {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+}
+
+.appearance__item {
+  display: grid;
+  width: 26px;
+  height: 22px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.appearance__item:hover:not([aria-pressed="true"]) {
+  color: var(--text);
+}
+
+.appearance__item[aria-pressed="true"] {
+  background: var(--surface-raised);
+  color: var(--accent-ink);
+  box-shadow: var(--shadow-1);
+}
+
+/* ── Mode chips ────────────────────────────────────────────────────────────── */
+
+.mode-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-4);
+}
+
+.mode-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: 32px;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--duration-fast) ease, background-color var(--duration-fast) ease,
+    border-color var(--duration-fast) ease, color var(--duration-fast) ease;
+}
+
+.mode-button:hover:not([aria-pressed="true"]) {
+  border-color: var(--border-strong);
+  background: var(--accent-wash);
+}
+
+.mode-button:active {
+  transform: scale(0.98);
+}
+
+.mode-button[aria-pressed="true"] {
+  border-color: var(--accent-fill);
+  background: var(--accent-fill);
+  color: var(--text-on-accent);
+}
+
+/* ── Fields ────────────────────────────────────────────────────────────────── */
+
+.font-section {
+  display: grid;
+  gap: var(--space-6);
+}
+
+.field {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.field__label {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+}
+
+.select-wrap {
+  position: relative;
+  display: block;
+}
+
+.select-wrap__chevron {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-end: var(--space-6);
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+select {
+  width: 100%;
+  height: var(--control-height-md);
+  padding-inline: var(--space-6) var(--space-11);
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  color: var(--text);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+select:hover {
+  border-color: var(--border-strong);
+}
+
+/* ── Live type preview ─────────────────────────────────────────────────────── */
+
+.type-preview {
+  position: relative;
+  isolation: isolate;
+  min-height: 84px;
+  overflow: hidden;
+  padding: var(--space-5) var(--space-6) var(--space-6);
+  border: 1px solid color-mix(in srgb, var(--amber), var(--border) 72%);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--amber), transparent 88%) 1px, transparent 1px) 0 0 / 22px 100%,
+    var(--surface-raised);
+}
+
+.type-preview::after {
+  content: "";
+  position: absolute;
+  inset-inline-end: 0;
+  inset-block: 0;
+  width: 4px;
+  background: var(--amber);
+}
+
+.type-preview__eyebrow {
+  display: block;
+  margin-bottom: var(--space-3);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+}
+
+.type-preview p {
+  margin: 0;
+}
+
+.type-preview__arabic {
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: 650;
+}
+
+.type-preview__english {
+  margin-top: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-medium);
+}
+
+.type-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.8em;
+  margin-inline-start: var(--space-2);
+  border-radius: 2px;
+  background: var(--amber);
+  vertical-align: -0.06em;
+  animation: caret-blink 1.15s steps(1, end) infinite;
+}
+
+@keyframes caret-blink {
+  50% { opacity: 0.18; }
+}
+
+/* ── Ranges ────────────────────────────────────────────────────────────────── */
+
+.range-line {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--hit-target);
+  /* A value axis reads low→high left→right in both scripts, matching the design. */
+  direction: ltr;
+}
+
+.range-cap {
+  flex: 0 0 12px;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  text-align: center;
+}
+
+.range-cap--small {
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-regular);
+}
+
+.range-cap--large {
+  color: var(--text);
+  font-size: var(--text-md);
+  font-weight: var(--weight-bold);
+}
+
+input[type="range"] {
+  --range-progress: 27%;
+  width: 100%;
+  height: var(--hit-target);
+  margin: 0;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  direction: ltr;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(to right, var(--accent) var(--range-progress), var(--track) var(--range-progress));
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+  appearance: none;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: var(--shadow-1);
+  transition: transform var(--duration-fast) ease;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+
+input[type="range"]:disabled {
+  cursor: not-allowed;
+}
+
+/* ── Size presets ──────────────────────────────────────────────────────────── */
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+  direction: ltr;
+}
+
+.preset-grid button {
+  display: grid;
+  place-items: center;
+  gap: 1px;
+  min-height: 38px;
+  padding: var(--space-2) 1px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  background: var(--surface-sunken);
+  color: var(--text);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) ease, border-color var(--duration-fast) ease,
+    color var(--duration-fast) ease;
+}
+
+.preset-grid button:hover:not([aria-pressed="true"]) {
+  border-color: var(--border-strong);
+  background: var(--accent-wash);
+}
+
+.preset-grid button:active {
+  transform: scale(0.97);
+}
+
+.preset-grid button b {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  line-height: 1.1;
+}
+
+.preset-grid button span {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.preset-grid button[aria-pressed="true"] {
+  border-color: var(--accent-fill);
+  background: var(--accent-wash);
+  color: var(--accent-ink);
+}
+
+.preset-grid button[aria-pressed="true"] span {
+  color: inherit;
+}
+
+/* ── Advanced controls ─────────────────────────────────────────────────────── */
+
+.advanced {
+  overflow: hidden;
+  border-radius: var(--radius-md);
+}
+
+.advanced summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: var(--hit-target);
+  padding-block-end: var(--space-4);
+  color: var(--text-muted);
+  list-style: none;
+  cursor: pointer;
+}
+
+.advanced summary::-webkit-details-marker {
+  display: none;
+}
+
+.summary-hint {
+  color: var(--accent-ink);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-regular);
+}
+
+.summary-hint::before {
+  content: "+";
+  display: inline-block;
+  margin-inline-end: var(--space-2);
+  transition: transform var(--duration-base) ease;
+}
+
+.advanced[open] .summary-hint::before {
+  transform: rotate(45deg);
+}
+
+.control-list {
+  display: grid;
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--border);
+}
+
+.range-control,
+.toggle-row {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  background: var(--surface-raised);
+}
+
+.control-icon {
+  display: grid;
+  flex: 0 0 18px;
+  place-items: center;
+  width: 18px;
+  margin-inline-end: var(--space-4);
+  color: var(--text-muted);
+}
+
+.range-control__copy {
+  display: grid;
+  flex: 1;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-2xs);
+}
+
+.range-control__copy input {
+  height: var(--hit-target);
+}
+
+.range-control output {
+  flex: 0 0 54px;
+  margin-inline-start: var(--space-4);
+  color: var(--accent-ink);
+  direction: ltr;
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+  text-align: start;
+}
+
+.toggle-row__copy {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+  font-size: var(--text-2xs);
+}
+
+.toggle-row__copy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-regular);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.range-control[aria-disabled="true"],
+.toggle-row[aria-disabled="true"] {
+  opacity: 0.48;
+}
+
+/* ── Site card ─────────────────────────────────────────────────────────────── */
+
+.site-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-1);
+  padding: var(--space-5);
+  border: 1px solid color-mix(in srgb, var(--accent), var(--border) 76%);
+  border-radius: var(--radius-md);
+  background: var(--accent-wash);
+}
+
+.site-card__icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--accent-ink);
+}
+
+.site-card__copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.site-card h2 {
+  color: var(--text);
+  font-size: var(--text-2xs);
+}
+
+.site-card p {
+  margin: var(--space-1) 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-snug);
+}
+
+/* ── Footer ────────────────────────────────────────────────────────────────── */
+
+.app-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 40px;
+  padding: var(--space-4) var(--space-8);
+  border-top: 1px solid var(--border);
+  background: var(--surface-sunken);
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
+#tab-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footer-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.text-button {
+  display: inline-flex;
+  min-height: var(--hit-target);
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent-ink);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color var(--duration-fast) ease;
+}
+
+.text-button:hover {
+  color: var(--text);
+}
+
+/* ── Page-state affordances ────────────────────────────────────────────────── */
+
+.app[data-site-scope="false"] #exclude-site {
+  pointer-events: none;
+}
+
+.section-heading__note {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}

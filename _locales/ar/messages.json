@@ -1,0 +1,23 @@
+{
+  "extensionName": {
+    "message": "SnFont — مساعد القراءة الذكي"
+  },
+  "extensionDescription": {
+    "message": "خطوط عربية وإنجليزية ذكية وتحكم مريح بالقراءة مع الحفاظ على تصميم المواقع."
+  },
+  "actionTitle": {
+    "message": "فتح إعدادات SnFont"
+  },
+  "commandIncrease": {
+    "message": "تكبير حجم خط القراءة"
+  },
+  "commandDecrease": {
+    "message": "تصغير حجم خط القراءة"
+  },
+  "commandReset": {
+    "message": "إعادة حجم الخط الافتراضي"
+  },
+  "commandToggle": {
+    "message": "تشغيل تحسين الخطوط أو إيقافه"
+  }
+}
