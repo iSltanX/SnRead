@@ -83,6 +83,7 @@ const elements = {
   themeToggleIcon: document.querySelector("#theme-toggle-icon"),
   themeToggleLabel: document.querySelector("#theme-toggle-label"),
   toast: document.querySelector("#toast"),
+  editorActions: document.querySelector("#editor-actions"),
   saveStatus: document.querySelector("#save-status"),
   saveStatusText: document.querySelector("#save-status-text"),
   saveButton: document.querySelector("#save-site"),
@@ -541,6 +542,7 @@ function renderDirtyState() {
     : "التغييرات معاينة مؤقتة حتى تضغط «حفظ التخصيص».";
   elements.saveStatus.dataset.state = dirty ? "dirty" : "idle";
   elements.saveStatusText.textContent = SAVE_STATE_TEXT[dirty ? "dirty" : "idle"];
+  elements.editorActions.dataset.dirty = String(dirty);
 }
 
 /** Reads the form into the draft. Nothing here touches storage. */
@@ -573,6 +575,15 @@ async function commitDraft() {
     return;
   }
 
+  // Commit transactionally. Mutating first and writing after would leave the
+  // page believing a failed save had succeeded, and the user's unsaved work
+  // would silently look committed.
+  const rollback = {
+    siteSettings: { ...state.siteSettings },
+    exclusions: [...state.exclusions],
+    draftHosts: new Set(state.draftHosts),
+  };
+
   state.siteSettings[host] = state.draft;
   state.exclusions = sanitizeExclusions(
     state.draftExcluded
@@ -583,9 +594,14 @@ async function commitDraft() {
   if (hasStoredOverride(host) || state.draftExcluded) state.draftHosts.delete(host);
   else state.draftHosts.add(host);
 
-  // Persist first, re-render, and only then show the confirmation — otherwise
-  // renderDirtyState() wipes «تم الحفظ» in the same frame it appears.
-  if (!(await persistSiteData())) return;
+  if (!(await persistSiteData())) {
+    Object.assign(state, rollback);
+    renderDirtyState();
+    return;
+  }
+
+  // Re-render before the confirmation, or renderDirtyState() wipes «تم الحفظ»
+  // in the same frame it appears.
   openDraft(host);
   render();
   setSaveState("saved");

@@ -44,7 +44,7 @@
       <section class="tab-context" aria-label="الموقع الحالي">
         <span class="site-dot" id="site-dot" aria-hidden="true"></span>
         <span class="tab-context__label" id="site-label">جارٍ التعرّف على الموقع…</span>
-        <span class="save-state" id="save-state" aria-hidden="true">جاهز</span>
+        <span class="save-state" id="save-state" data-state="idle" aria-hidden="true"></span>
       </section>
 
       <div class="scroll-region" id="scroll-region">
@@ -193,13 +193,13 @@
       <footer class="app-footer">
         <span id="tab-status">مفعّل حاليًا في هذا التبويب</span>
         <div class="footer-actions">
-          <button class="text-button" type="button" id="open-options">
-            <span data-icon="sliders-horizontal" data-icon-size="13"></span>
-            <span>إدارة المواقع</span>
+          <button class="footer-action" type="button" id="open-options" title="إدارة المواقع">
+            <span data-icon="sliders-horizontal" data-icon-size="17"></span>
+            <span class="footer-action__label">المواقع</span>
           </button>
-          <button class="text-button" type="button" id="reset-settings">
-            <span data-icon="rotate-ccw" data-icon-size="13"></span>
-            <span id="reset-label">إعادة الإعداد العام</span>
+          <button class="footer-action" type="button" id="reset-settings" title="إعادة الإعداد العام إلى القيم الافتراضية">
+            <span data-icon="rotate-ccw" data-icon-size="17"></span>
+            <span class="sn-sr-only" id="reset-label">إعادة الإعداد العام</span>
           </button>
         </div>
       </footer>

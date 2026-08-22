@@ -271,7 +271,9 @@ h1 {
   display: grid;
   min-height: 680px;
   grid-template-columns: minmax(260px, 310px) minmax(0, 1fr);
-  overflow: hidden;
+  /* `clip` rounds the corners without becoming a scroll container — `hidden`
+     would, and that silently disables the sticky commit bar inside. */
+  overflow: clip;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   background: var(--surface);
@@ -568,7 +570,7 @@ h1 {
 }
 
 .editor-content {
-  padding: var(--space-11) clamp(var(--space-10), 4vw, var(--space-12)) var(--space-12);
+  padding: var(--space-11) clamp(var(--space-10), 4vw, var(--space-12)) 0;
 }
 
 .editor-header {
@@ -951,15 +953,32 @@ input[type="range"] {
 
 /* ── Editor commit bar ─────────────────────────────────────────────────────── */
 
+/*
+ * The commit bar sticks to the bottom of the viewport. As a plain last child it
+ * sat below the whole editor grid, so on a normal screen the save button was
+ * simply never on screen — which reads as "there is no save button".
+ */
 .editor-actions {
+  position: sticky;
+  z-index: 5;
+  inset-block-end: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
   flex-wrap: wrap;
   margin-top: var(--space-10);
-  padding-top: var(--space-8);
+  margin-inline: calc(var(--space-10) * -1);
+  padding: var(--space-6) var(--space-10);
   border-top: 1px solid var(--border);
+  background: var(--surface);
+  transition: background-color var(--duration-base) ease, border-color var(--duration-base) ease;
+}
+
+/* Unsaved work announces itself: the bar changes ground, not just its label. */
+.editor-actions[data-dirty="true"] {
+  border-top-color: var(--notice-border);
+  background: var(--notice-bg);
 }
 
 .editor-actions__hint {

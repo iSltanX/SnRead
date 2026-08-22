@@ -95,10 +95,24 @@ function announce(message) {
   elements.announcer.textContent = message
 }
 
+let saveStateTimer = null
+
+/**
+ * A confirmation, not a label. «تم الحفظ» used to be written once and left
+ * there, so the panel claimed a save had just happened for the rest of the
+ * session. Terminal states clear themselves; idle shows nothing.
+ */
 function setSaveState(label, status = 'ready') {
+  window.clearTimeout(saveStateTimer)
   elements.saveState.textContent = label
   elements.saveState.dataset.state = status
   if (status !== 'saving') announce(label)
+  if (status === 'ready') {
+    saveStateTimer = window.setTimeout(() => {
+      elements.saveState.textContent = ''
+      elements.saveState.dataset.state = 'idle'
+    }, 1800)
+  }
 }
 
 /* ── Theme ─────────────────────────────────────────────────────────────────── */
