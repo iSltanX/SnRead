@@ -97,6 +97,14 @@ test('reading CSS never recolors host pages and has no body fallback', () => {
   assert.doesNotMatch(cssBuilder, /(?:background(?:-color)?|color-scheme|\bcolor)\s*:/)
   assert.match(cssBuilder, /settings\.reduceVisualNoise/)
   assert.match(cssBuilder, /\[role="complementary"\]/)
+
+  // Quieting a block with opacity also composites its text toward whatever is
+  // behind it. At 0.58 every navigation element sampled on a real article fell
+  // out of WCAG AA, so the floor is pinned here, and a reader who has asked the
+  // OS for more contrast or less transparency gets no dimming at all.
+  const quiet = Number(cssBuilder.match(/opacity: (0\.\d+) !important/)?.[1])
+  assert.ok(quiet >= 0.75, `the quiet-block opacity must not drop below 0.75, got ${quiet}`)
+  assert.match(cssBuilder, /@media \(prefers-contrast: more\), \(prefers-reduced-transparency: reduce\)/)
   assert.doesNotMatch(cssBuilder, /\bbody\b/)
 
   // The reading measure lands on prose blocks, never on the root container:

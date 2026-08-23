@@ -349,24 +349,32 @@
   }
 
   function buildCss() {
+    // Opacity composites text toward whatever sits behind it, so quieting a
+    // block also costs it contrast. Measured on a Wikipedia article at the old
+    // 0.58: every sampled navigation element fell out of WCAG AA — 16.1:1 became
+    // 4.1:1, and an already-quiet link 5.4:1 became 2.4:1. 0.75 keeps ordinary
+    // running text well clear of the floor (16.1:1 → 7.2:1) while still reading
+    // as recessed, and anyone who has asked the OS for more contrast or less
+    // transparency gets no dimming at all.
+    const QUIET_TARGETS = `:where(
+          nav,
+          aside,
+          [role="navigation"],
+          [role="complementary"]
+        )`
     const visualNoiseCss = settings.mode === 'reading' && settings.reduceVisualNoise
       ? `
-        .snfont-active [${READING_ROOT_MARKER}] :where(
-          nav,
-          aside,
-          [role="navigation"],
-          [role="complementary"]
-        ) {
-          opacity: 0.58 !important;
+        .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
+          opacity: 0.75 !important;
           transition: opacity 140ms ease !important;
         }
-        .snfont-active [${READING_ROOT_MARKER}] :where(
-          nav,
-          aside,
-          [role="navigation"],
-          [role="complementary"]
-        ):is(:hover, :focus-within) {
+        .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS}:is(:hover, :focus-within) {
           opacity: 1 !important;
+        }
+        @media (prefers-contrast: more), (prefers-reduced-transparency: reduce) {
+          .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
+            opacity: 1 !important;
+          }
         }
       `
       : ''
