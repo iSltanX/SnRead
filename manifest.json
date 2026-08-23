@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "short_name": "SnFont",
-  "version": "1.4.1",
-  "version_name": "1.4.1",
+  "short_name": "SnRead",
+  "version": "1.5.0",
+  "version_name": "1.5.0",
   "description": "__MSG_extensionDescription__",
   "default_locale": "ar",
   "minimum_chrome_version": "111",

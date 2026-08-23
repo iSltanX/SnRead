@@ -1,14 +1,27 @@
 /** Shared settings contract for the popup, options page, and service worker. */
 
 export const STORAGE_KEYS = Object.freeze({
-  settings: 'snfont.settings',
-  siteSettings: 'snfont.siteSettings',
-  exclusions: 'snfont.exclusions',
-  uiTheme: 'snfont.uiTheme',
-  schemaVersion: 'snfont.schemaVersion',
+  settings: 'snread.settings',
+  siteSettings: 'snread.siteSettings',
+  exclusions: 'snread.exclusions',
+  uiTheme: 'snread.uiTheme',
+  schemaVersion: 'snread.schemaVersion',
 })
 
-export const SETTINGS_SCHEMA_VERSION = 3
+export const SETTINGS_SCHEMA_VERSION = 4
+
+/**
+ * Namespaces this extension has written under before, newest first. The product
+ * was SnFont, then briefly SnType; anyone upgrading has settings sitting under a
+ * name the code no longer reads. The worker copies them across once and clears
+ * them. Kept here, beside the live keys, so the list can never drift from
+ * STORAGE_KEYS — every role above must appear in every entry below.
+ */
+export const LEGACY_STORAGE_NAMESPACES = Object.freeze(['sntype', 'snfont'])
+
+export const legacyKeysFor = (namespace) => Object.freeze(
+  Object.fromEntries(Object.keys(STORAGE_KEYS).map((role) => [role, `${namespace}.${role}`])),
+)
 
 /**
  * `system` follows the OS appearance and is the default: opening a white panel
@@ -242,7 +255,7 @@ export function getEffectiveSiteSettings({
   const excluded = isHostnameExcluded(hostname, exclusions)
   const mergedSettings = mergeSettings(globalSettings, siteOverride)
   // The global switch is the master gate: site settings may opt out, but may
-  // never re-enable the engine after the user disables SnFont everywhere.
+  // never re-enable the engine after the user disables SnRead everywhere.
   const effectiveSettings = {
     ...mergedSettings,
     enabled: globalSettings.enabled && mergedSettings.enabled,

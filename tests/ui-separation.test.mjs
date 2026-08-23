@@ -1,5 +1,5 @@
 /**
- * SnFont's two hard product rules:
+ * SnRead's two hard product rules:
  *   1. the tool's own appearance is never a page mode, and
  *   2. the page engine never recolours a host page.
  * Plus the honesty rule added in 1.2: the popup must not claim to be working
@@ -64,8 +64,8 @@ test('keeps the UI theme available on protected and excluded pages', () => {
 })
 
 test('uses the requested Cairo and Almarai UI typography', () => {
-  assert.match(tokensCss, /--font-display:\s*"SnFont Display",\s*"Cairo"/)
-  assert.match(tokensCss, /--font-body:\s*"SnFont Text",\s*"Almarai"/)
+  assert.match(tokensCss, /--font-display:\s*"SnRead Display",\s*"Cairo"/)
+  assert.match(tokensCss, /--font-body:\s*"SnRead Text",\s*"Almarai"/)
   assert.match(popupCss, /font-family:\s*var\(--font-display\)/)
   assert.match(popupCss, /font-family:\s*var\(--font-body\)/)
 })
@@ -117,7 +117,7 @@ test('reading CSS never recolors host pages and has no body fallback', () => {
     familyRule.slice(0, familyRule.indexOf('}')),
     /font-size|line-height|letter-spacing/,
   )
-  const proseRule = cssBuilder.slice(cssBuilder.indexOf('.snfont-active [${PROSE_MARKER}="1"] {'))
+  const proseRule = cssBuilder.slice(cssBuilder.indexOf('.snread-active [${PROSE_MARKER}="1"] {'))
   assert.match(proseRule.slice(0, 400), /font-size[\s\S]*line-height[\s\S]*letter-spacing/)
 
   // One measure for every prose block. `ch` resolves against each element's own
@@ -162,7 +162,7 @@ test('the site editor is a draft until the user saves it', () => {
 })
 
 test('the page engine only resizes prose, never application chrome', () => {
-  assert.match(contentJs, /const PROSE_MARKER = 'data-snfont-prose'/)
+  assert.match(contentJs, /const PROSE_MARKER = 'data-snread-prose'/)
   assert.match(contentJs, /applyTypography\(proseBlock, text, true\)/)
   assert.match(contentJs, /applyTypography\(sourceElement, text, false\)/)
   // The over-broad "the site named a font" guard is gone.
@@ -222,7 +222,7 @@ test('open shadow roots are part of the page', () => {
   assert.match(contentJs, /function buildShadowCss\(\)/)
   // The document hook lives on <html>, outside every shadow boundary, and the
   // sheet is derived from buildCss() so the two can never drift.
-  assert.match(contentJs, /buildCss\(\)\.replaceAll\('\.snfont-active ', ''\)/)
+  assert.match(contentJs, /buildCss\(\)\.replaceAll\('\.snread-active ', ''\)/)
   assert.match(contentJs, /adoptedStyleSheets/)
   assert.match(contentJs, /NodeFilter\.SHOW_TEXT \| NodeFilter\.SHOW_ELEMENT/)
   // Teardown has to reach inside them too, or a disabled extension would leave

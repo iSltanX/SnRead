@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="utf-8">
-    <title>SnFont engine regression harness</title>
+    <title>SnRead engine regression harness</title>
     <style>
       body { font-family: Arial, sans-serif; }
       .authored { font-family: Georgia, serif; }
@@ -33,10 +33,10 @@
       // Minimal extension-API mock; production code still runs unchanged.
       const listeners = { message: [], storage: [] }
       let applyCount = 0
-      window.__snfontApplyCount = () => applyCount
+      window.__snreadApplyCount = () => applyCount
       window.chrome = {
         runtime: {
-          id: 'snfont-engine-harness',
+          id: 'snread-engine-harness',
           getURL(path) { return new URL(`../../${path}`, location.href).href },
           async sendMessage() {
             applyCount += 1

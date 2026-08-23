@@ -26,22 +26,22 @@
     reduceVisualNoise: bool('reduceVisualNoise', false),
   })
 
-  window.__snfontHarness = {
+  window.__snreadHarness = {
     applyRequests: () => applyRequests,
     settings: effectiveSettings,
-    emitStorageChange(changes = { 'snfont.settings': { newValue: {} } }) {
+    emitStorageChange(changes = { 'snread.settings': { newValue: {} } }) {
       for (const fn of listeners.storage) fn(changes, 'local')
     },
     askPageState() {
       return new Promise((resolve) => {
-        for (const fn of listeners.message) fn({ type: 'SNFONT_GET_PAGE_STATE' }, {}, resolve)
+        for (const fn of listeners.message) fn({ type: 'SNREAD_GET_PAGE_STATE' }, {}, resolve)
       })
     },
   }
 
   window.chrome = {
     runtime: {
-      id: 'snfont-page-harness',
+      id: 'snread-page-harness',
       getURL: (path) => new URL(`../../${path}`, location.href).href,
       async sendMessage() {
         applyRequests += 1

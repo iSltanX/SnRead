@@ -45,5 +45,5 @@ createServer(async (request, response) => {
     response.writeHead(404, { 'content-type': 'text/plain' }).end('not found')
   }
 }).listen(port, () => {
-  console.log(`SnFont harness on http://localhost:${port}/tests/harness/popup.html`)
+  console.log(`SnRead harness on http://localhost:${port}/tests/harness/popup.html`)
 })

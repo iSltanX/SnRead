@@ -4,7 +4,7 @@
  * `globalThis.chrome` exists by the time the page modules evaluate.
  *
  * Query string knobs:
- *   ?theme=dark        seed snfont.uiTheme
+ *   ?theme=dark        seed snread.uiTheme
  *   ?page=protected    pretend the active tab is a brave:// page
  *   ?page=reload       pretend the content script is not injected yet
  *   ?seed=empty        start with no stored settings at all
@@ -30,7 +30,7 @@
   const store = params.get('seed') === 'empty'
     ? {}
     : {
-      'snfont.settings': {
+      'snread.settings': {
         enabled: true,
         mode: 'design',
         arabicFont: 'Noto Sans Arabic',
@@ -42,10 +42,10 @@
         textWidth: 100,
         reduceVisualNoise: false,
       },
-      'snfont.siteSettings': { 'arabic.example.com': { fontSize: 20, arabicFont: 'Cairo' } },
-      'snfont.exclusions': ['excluded.example.com'],
-      'snfont.uiTheme': params.get('theme') === 'dark' ? 'dark' : 'light',
-      'snfont.schemaVersion': 2,
+      'snread.siteSettings': { 'arabic.example.com': { fontSize: 20, arabicFont: 'Cairo' } },
+      'snread.exclusions': ['excluded.example.com'],
+      'snread.uiTheme': params.get('theme') === 'dark' ? 'dark' : 'light',
+      'snread.schemaVersion': 2,
     }
 
   const clone = (value) => (value === undefined ? undefined : structuredClone(value))
@@ -92,7 +92,7 @@
 
   globalThis.chrome = {
     runtime: {
-      id: 'snfont-harness',
+      id: 'snread-harness',
       lastError: undefined,
       getURL: (path) => new URL(`../../${path}`, location.href).href,
       openOptionsPage: () => window.open('./options.html', '_blank'),
@@ -131,7 +131,7 @@
       },
       async sendMessage(_tabId, message) {
         if (pageState !== 'active') throw new Error('Receiving end does not exist.')
-        if (message?.type === 'SNFONT_GET_PAGE_STATE') {
+        if (message?.type === 'SNREAD_GET_PAGE_STATE') {
           return {
             ok: true,
             hostname: host,

@@ -3,11 +3,13 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_UI_THEME,
   FONT_SIZE_PRESETS,
+  LEGACY_STORAGE_NAMESPACES,
   SETTINGS_SCHEMA_VERSION,
   STORAGE_KEYS,
   findSiteOverrideEntry,
   getEffectiveSiteSettings,
   isHostnameExcluded,
+  legacyKeysFor,
   mergeSettings,
   normalizeHostname,
   sanitizeExclusions,
@@ -74,12 +76,44 @@ async function flashBadge(tabId, text) {
   }
 }
 
+/**
+ * Carries settings across the renames this product has been through. The storage
+ * namespace changed with the name, so an upgrading install finds nothing under
+ * the current keys while everything it ever saved sits under an older one.
+ *
+ * Newest legacy namespace wins, a value already present under the current name is
+ * never overwritten, and every old namespace is cleared afterwards — so this can
+ * neither run twice nor undo a change the user made after upgrading.
+ */
+async function migrateLegacyNamespaces() {
+  const legacyNames = LEGACY_STORAGE_NAMESPACES
+    .flatMap((namespace) => Object.values(legacyKeysFor(namespace)))
+  const legacy = await chrome.storage.local.get(legacyNames)
+  if (!legacyNames.some((key) => legacy[key] !== undefined)) return
+
+  const current = await chrome.storage.local.get(Object.values(STORAGE_KEYS))
+  const carried = {}
+  for (const namespace of LEGACY_STORAGE_NAMESPACES) {
+    const keys = legacyKeysFor(namespace)
+    for (const [role, key] of Object.entries(STORAGE_KEYS)) {
+      const inherited = legacy[keys[role]]
+      if (current[key] === undefined && carried[key] === undefined && inherited !== undefined) {
+        carried[key] = inherited
+      }
+    }
+  }
+  if (Object.keys(carried).length) await chrome.storage.local.set(carried)
+  await chrome.storage.local.remove(legacyNames)
+}
+
 async function ensureDefaults() {
+  await migrateLegacyNamespaces()
   const stored = await chrome.storage.local.get(Object.values(STORAGE_KEYS))
   const previousVersion = Number(stored[STORAGE_KEYS.schemaVersion]) || 0
   // Schema 3 introduced the `system` appearance. Anyone below it only ever had
   // `light` because schema 2 wrote that default for them, never because they
-  // chose it — so migrate them onto the OS preference exactly once.
+  // chose it — so migrate them onto the OS preference exactly once. Schema 4 is
+  // the SnRead rename and carries every value forward untouched.
   const uiTheme = previousVersion < 3
     ? DEFAULT_UI_THEME
     : sanitizeUiTheme(stored[STORAGE_KEYS.uiTheme])

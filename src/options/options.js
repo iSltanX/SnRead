@@ -419,8 +419,8 @@ function renderEditor() {
   elements.enabled.setAttribute(
     "aria-label",
     state.settings.enabled === false
-      ? "تشغيل SnFont على هذا الموقع؛ النظام متوقف عالميًا"
-      : "تشغيل SnFont على هذا الموقع",
+      ? "تشغيل SnRead على هذا الموقع؛ النظام متوقف عالميًا"
+      : "تشغيل SnRead على هذا الموقع",
   );
   if (enabledHint) {
     enabledHint.textContent = state.settings.enabled === false
@@ -680,7 +680,7 @@ function downloadExport() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = `snfont-settings-${new Date().toISOString().slice(0, 10)}.json`;
+  link.download = `snread-settings-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.append(link);
   link.click();
   link.remove();
@@ -729,7 +729,7 @@ async function importSettings(event) {
 }
 
 async function resetAll() {
-  if (!window.confirm("هل تريد إعادة جميع إعدادات SnFont؟ لا يمكن التراجع عن هذا الإجراء.")) return;
+  if (!window.confirm("هل تريد إعادة جميع إعدادات SnRead؟ لا يمكن التراجع عن هذا الإجراء.")) return;
 
   const defaults = getSharedDefaults();
   try {

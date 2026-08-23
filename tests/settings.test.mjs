@@ -43,7 +43,7 @@ test('sanitizes values and clamps manual controls', () => {
 })
 
 test('keeps UI theme separate and sanitizes its storage value', () => {
-  assert.equal(SETTINGS_SCHEMA_VERSION, 3)
+  assert.equal(SETTINGS_SCHEMA_VERSION, 4)
   assert.deepEqual(UI_THEMES, ['system', 'light', 'dark'])
   assert.equal(DEFAULT_UI_THEME, 'system')
   assert.equal(sanitizeUiTheme('dark'), 'dark')

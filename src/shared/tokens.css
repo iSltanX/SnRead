@@ -1,9 +1,10 @@
 /**
- * SnFont design tokens — the single source of truth for both extension surfaces.
+ * SnRead design tokens — the single source of truth for both extension surfaces.
  *
  * Import it first from popup.css and options.css; never redeclare a value below
- * in a surface stylesheet. The palette mirrors the SnFont Figma identity, and
- * every semantic role resolves from it so light and dark stay in step.
+ * in a surface stylesheet. The palette is the SnRead identity — deep blue as the
+ * ground, amber as a shape colour — and every semantic role resolves from it so
+ * light and dark stay in step.
  *
  * Theming contract: `document.documentElement.dataset.theme` is always one of
  * `light`, `dark`, or `system`. Dark values are declared twice on purpose — once
@@ -12,14 +13,14 @@
  */
 
 /* ── Font faces ────────────────────────────────────────────────────────────────
- * Declared once for both surfaces. `SnFont Display` / `SnFont Text` are the UI
+ * Declared once for both surfaces. `SnRead Display` / `SnRead Text` are the UI
  * families; the four real-name faces exist so any surface can preview a choice
  * by the same name the user picked. Chromium fetches each file once regardless
  * of how many families reference it.
  */
 
 @font-face {
-  font-family: "SnFont Display";
+  font-family: "SnRead Display";
   src: url("../../assets/fonts/Cairo-Variable.woff2") format("woff2");
   font-style: normal;
   font-weight: 200 900;
@@ -27,7 +28,7 @@
 }
 
 @font-face {
-  font-family: "SnFont Text";
+  font-family: "SnRead Text";
   src: url("../../assets/fonts/Almarai-Regular.woff2") format("woff2");
   font-style: normal;
   font-weight: 400;
@@ -35,7 +36,7 @@
 }
 
 @font-face {
-  font-family: "SnFont Text";
+  font-family: "SnRead Text";
   src: url("../../assets/fonts/Almarai-Bold.woff2") format("woff2");
   font-style: normal;
   font-weight: 700 900;
@@ -83,7 +84,7 @@
 }
 
 :root {
-  /* ── Brand palette (Figma: Brand Identity & Design System) ───────────────── */
+  /* ── Brand palette — the raw identity values ─────────────────────────────── */
   --sn-blue-900: #132b49;
   --sn-blue-800: #152e4f;
   --sn-blue-700: #1e3a5f; /* Primary Blue */
@@ -148,8 +149,8 @@
   --warning: var(--sn-orange-500);
   --danger: var(--sn-red-600);
 
-  /* The notice banner ground — a real role, not an inline computation, so
-     the Figma variable and the CSS resolve to the same colour. */
+  /* The notice banner ground — a real role, not an inline computation, so every
+     surface that needs it resolves the same colour. */
   --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
   --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
 
@@ -197,8 +198,8 @@
   --weight-bold: 700;
 
   /* Cairo carries display and functional text; Almarai carries body and prose. */
-  --font-display: "SnFont Display", "Cairo", system-ui, sans-serif;
-  --font-body: "SnFont Text", "Almarai", system-ui, sans-serif;
+  --font-display: "SnRead Display", "Cairo", system-ui, sans-serif;
+  --font-body: "SnRead Text", "Almarai", system-ui, sans-serif;
 
   /* ── Motion ──────────────────────────────────────────────────────────────── */
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -212,7 +213,7 @@
 }
 
 /* ── Semantic roles — dark (system preference) ─────────────────────────────── */
-/* SNFONT-DARK-BLOCK-START */
+/* SNREAD-DARK-BLOCK-START */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -253,10 +254,10 @@
     --shadow-3: 0 20px 62px rgb(0 0 0 / 40%), 0 2px 10px rgb(0 0 0 / 24%);
   }
 }
-/* SNFONT-DARK-BLOCK-END */
+/* SNREAD-DARK-BLOCK-END */
 
 /* ── Semantic roles — dark (explicit choice) ───────────────────────────────── */
-/* SNFONT-DARK-BLOCK-START */
+/* SNREAD-DARK-BLOCK-START */
 :root[data-theme="dark"] {
   color-scheme: dark;
 
@@ -295,7 +296,7 @@
   --shadow-2: 0 12px 32px rgb(0 0 0 / 34%);
   --shadow-3: 0 20px 62px rgb(0 0 0 / 40%), 0 2px 10px rgb(0 0 0 / 24%);
 }
-/* SNFONT-DARK-BLOCK-END */
+/* SNREAD-DARK-BLOCK-END */
 
 /* ── Shared primitives ─────────────────────────────────────────────────────── */
 
@@ -322,6 +323,13 @@
   clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
+}
+
+/* The brand mark: the letter takes the control's colour, the caret keeps the
+   accent — the one place in the system where amber is allowed to be a shape. */
+.sn-mark {
+  display: block;
+  flex: 0 0 auto;
 }
 
 /* Every icon inherits its colour from the control it sits in — no filters. */

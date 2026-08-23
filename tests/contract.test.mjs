@@ -98,7 +98,7 @@ test('the content script mirrors the shared hostname validator', async () => {
 
 test('no surface hardcodes a message type that the shared module owns', () => {
   for (const [name, source] of [['popup.js', popupJs], ['service-worker.js', serviceWorkerJs]]) {
-    const literals = [...source.matchAll(/'(SNFONT_[A-Z_]+)'/g)].map((match) => match[1])
+    const literals = [...source.matchAll(/'(SNREAD_[A-Z_]+)'/g)].map((match) => match[1])
     assert.deepEqual(literals, [], `${name} should import MESSAGE instead of repeating ${literals.join(', ')}`)
   }
 })

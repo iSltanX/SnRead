@@ -1,5 +1,5 @@
 /**
- * SnFont page engine.
+ * SnRead page engine.
  *
  * Manifest V3 injects content scripts as classic scripts, so this file cannot
  * import `src/shared/*`. The contract it repeats — storage keys, message types,
@@ -9,18 +9,18 @@
 (() => {
   'use strict'
 
-  if (globalThis.__snFontContentLoaded) return
-  globalThis.__snFontContentLoaded = true
+  if (globalThis.__snReadContentLoaded) return
+  globalThis.__snReadContentLoaded = true
 
   const STORAGE = {
-    settings: 'snfont.settings',
-    siteSettings: 'snfont.siteSettings',
-    exclusions: 'snfont.exclusions',
+    settings: 'snread.settings',
+    siteSettings: 'snread.siteSettings',
+    exclusions: 'snread.exclusions',
   }
 
   const MESSAGE = {
-    getSettings: 'SNFONT_GET_SETTINGS',
-    pageState: 'SNFONT_GET_PAGE_STATE',
+    getSettings: 'SNREAD_GET_SETTINGS',
+    pageState: 'SNREAD_GET_PAGE_STATE',
   }
 
   const DEFAULTS = {
@@ -114,7 +114,7 @@
     '[role="search"]',
     '[role="dialog"]',
     '[aria-modal="true"]',
-    '[data-snfont-ignore]',
+    '[data-snread-ignore]',
   ].join(',')
   const ARABIC_PATTERN = /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/
   const LATIN_PATTERN = /[A-Za-z\u00c0-\u024f\u1e00-\u1eff]/
@@ -141,13 +141,13 @@
   const MONO_FAMILY_PATTERN =
     /(?:ui-monospace|sfmono|menlo|monaco|consolas|"?courier|roboto mono|source code|fira code|fira mono|jetbrains mono|ibm plex mono|cascadia|dejavu sans mono|liberation mono)/i
 
-  const MARKER = 'data-snfont-text'
-  const PROSE_MARKER = 'data-snfont-prose'
-  const AUTO_DIR_MARKER = 'data-snfont-auto-dir'
-  const READING_ROOT_MARKER = 'data-snfont-reading-root'
-  const TARGET_SIZE_PROPERTY = '--snfont-runtime-font-size'
-  const STYLE_ID = 'snfont-runtime-style'
-  const ROOT_CLASS = 'snfont-active'
+  const MARKER = 'data-snread-text'
+  const PROSE_MARKER = 'data-snread-prose'
+  const AUTO_DIR_MARKER = 'data-snread-auto-dir'
+  const READING_ROOT_MARKER = 'data-snread-reading-root'
+  const TARGET_SIZE_PROPERTY = '--snread-runtime-font-size'
+  const STYLE_ID = 'snread-runtime-style'
+  const ROOT_CLASS = 'snread-active'
   const ARTICLE_SELECTOR = '[itemprop="articleBody"], article, [role="article"]'
   const ROOT_CANDIDATE_SELECTOR = `${ARTICLE_SELECTOR}, main, [role="main"]`
   const PROSE_BLOCK_SELECTOR = 'h1, h2, h3, h4, h5, h6, p, li, blockquote, figcaption, dt, dd'
@@ -318,7 +318,7 @@
     if (settings.arabicFont !== 'Almarai') {
       return `
         @font-face {
-          font-family: "SnFont Smart";
+          font-family: "SnRead Smart";
           src: ${fontSource(settings.arabicFont)};
           font-display: swap;
           font-style: normal;
@@ -330,7 +330,7 @@
 
     return `
       @font-face {
-        font-family: "SnFont Smart";
+        font-family: "SnRead Smart";
         src: local("Almarai Regular"), url(${cssString(chrome.runtime.getURL('assets/fonts/Almarai-Regular.woff2'))}) format("woff2");
         font-display: swap;
         font-style: normal;
@@ -338,7 +338,7 @@
         unicode-range: ${ARABIC_UNICODE_RANGE};
       }
       @font-face {
-        font-family: "SnFont Smart";
+        font-family: "SnRead Smart";
         src: local("Almarai Bold"), url(${cssString(chrome.runtime.getURL('assets/fonts/Almarai-Bold.woff2'))}) format("woff2");
         font-display: swap;
         font-style: normal;
@@ -364,15 +364,15 @@
         )`
     const visualNoiseCss = settings.mode === 'reading' && settings.reduceVisualNoise
       ? `
-        .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
+        .snread-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
           opacity: 0.75 !important;
           transition: opacity 140ms ease !important;
         }
-        .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS}:is(:hover, :focus-within) {
+        .snread-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS}:is(:hover, :focus-within) {
           opacity: 1 !important;
         }
         @media (prefers-contrast: more), (prefers-reduced-transparency: reduce) {
-          .snfont-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
+          .snread-active [${READING_ROOT_MARKER}] ${QUIET_TARGETS} {
             opacity: 1 !important;
           }
         }
@@ -390,7 +390,7 @@
     const measurePx = BASE_MEASURE_CH * (settings.textWidth / 100) * settings.fontSize * CH_PER_EM
     const readingCss = settings.mode === 'reading'
       ? `
-        .snfont-active [${READING_ROOT_MARKER}] [${PROSE_MARKER}="1"] {
+        .snread-active [${READING_ROOT_MARKER}] [${PROSE_MARKER}="1"] {
           max-width: ${measurePx.toFixed(2)}px !important;
           box-sizing: border-box !important;
           margin-inline: auto !important;
@@ -402,22 +402,22 @@
     return `
       ${arabicFontFaces()}
       @font-face {
-        font-family: "SnFont Smart";
+        font-family: "SnRead Smart";
         src: ${fontSource(settings.englishFont)};
         font-display: swap;
         font-style: normal;
         font-weight: 100 900;
         unicode-range: ${LATIN_UNICODE_RANGE};
       }
-      .snfont-active [${MARKER}="1"] {
-        font-family: "SnFont Smart", ${cssString(settings.englishFont)}, ${cssString(settings.arabicFont)}, sans-serif !important;
+      .snread-active [${MARKER}="1"] {
+        font-family: "SnRead Smart", ${cssString(settings.englishFont)}, ${cssString(settings.arabicFont)}, sans-serif !important;
       }
       /* Anything that reflows its container is confined to prose blocks.
          Applying them to buttons, nav items and badges is what used to break
          application layouts — letter-spacing included: at 0.2em it widened a
          badge by 35% and a table cell by 52% while doing nothing at all for
          Arabic, which the browser never tracks because the script is joined. */
-      .snfont-active [${PROSE_MARKER}="1"] {
+      .snread-active [${PROSE_MARKER}="1"] {
         font-size: var(${TARGET_SIZE_PROPERTY}, ${settings.fontSize}px) !important;
         line-height: ${settings.lineHeight} !important;
         letter-spacing: ${settings.letterSpacing}em !important;
@@ -427,13 +427,13 @@
   }
 
   /**
-   * Shadow trees never see the document's stylesheets, and the `.snfont-active`
+   * Shadow trees never see the document's stylesheets, and the `.snread-active`
    * hook lives on <html>, outside every shadow boundary. Deriving the sheet from
    * buildCss() by dropping that hook means the two can never drift; the sheet is
    * only adopted while the engine is on, so the markers alone are enough.
    */
   function buildShadowCss() {
-    return buildCss().replaceAll('.snfont-active ', '')
+    return buildCss().replaceAll('.snread-active ', '')
   }
 
   function primaryFamilyOf(fontFamily) {
@@ -441,7 +441,7 @@
   }
 
   /**
-   * Typography SnFont must never touch.
+   * Typography SnRead must never touch.
    *
    * Until 1.2 this asked "did the site name a font?", and answered yes for
    * every modern site — GitHub ships `Mona Sans VF`, YouTube ships `Roboto`, so
@@ -457,7 +457,7 @@
     const stack = computedStyle.fontFamily.toLowerCase()
     // Only the *primary* family decides. Testing the whole stack matched the
     // emoji and symbol fallbacks nearly every site appends — "Segoe UI Symbol"
-    // alone made SnFont skip 96% of Substack.
+    // alone made SnRead skip 96% of Substack.
     const primary = primaryFamilyOf(stack)
     if (ICON_FONT_PATTERN.test(primary) || MONO_FAMILY_PATTERN.test(primary)) return true
     // A stack whose generic tail is monospace is code, tabular data, or a terminal.
@@ -477,7 +477,7 @@
     const boundary = element.closest(UI_ANCESTORS)
     if (!boundary) return false
     if (boundary.tagName !== 'HEADER' && boundary.tagName !== 'FOOTER') return true
-    if (boundary.matches('[role="banner"], [role="contentinfo"], [data-snfont-ignore]')) return true
+    if (boundary.matches('[role="banner"], [role="contentinfo"], [data-snread-ignore]')) return true
     if (!boundary.closest(ROOT_CANDIDATE_SELECTOR)) return true
     // In reading mode only the article actually being read counts.
     if (settings.mode === 'reading') return !readingRoot || !readingRoot.contains(boundary)

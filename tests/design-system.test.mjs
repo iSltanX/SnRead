@@ -1,5 +1,5 @@
 /**
- * Guards the single design-token layer. SnFont 1.1 shipped two independent
+ * Guards the single design-token layer. SnRead 1.1 shipped two independent
  * design systems — thirty custom properties in the popup, forty in the options
  * page, twelve duplicated hex values under different names, and eight roles
  * where the two files simply disagreed. These tests make that impossible to
@@ -35,7 +35,7 @@ test('both surfaces build on the shared token layer', () => {
 })
 
 test('the two dark-theme blocks stay identical', () => {
-  const blocks = [...tokens.matchAll(/SNFONT-DARK-BLOCK-START \*\/([\s\S]*?)\/\* SNFONT-DARK-BLOCK-END/g)]
+  const blocks = [...tokens.matchAll(/SNREAD-DARK-BLOCK-START \*\/([\s\S]*?)\/\* SNREAD-DARK-BLOCK-END/g)]
     .map((match) => match[1].replace(/^\s*@media[^{]*\{/, '').replace(/\}\s*$/, ''))
     .map((block) => block.replace(/:root[^{]*\{/, '').replace(/[\s}]/g, ''))
 

@@ -121,8 +121,9 @@ summary:focus-visible {
   min-width: 0;
 }
 
+/* The squircle is the ground; the glyph inside it comes from src/shared/icons.js
+   so the panel, the site manager and the exported icon files cannot drift. */
 .brand__mark {
-  position: relative;
   display: grid;
   width: 26px;
   height: 26px;
@@ -132,22 +133,6 @@ summary:focus-visible {
   color: var(--sn-white);
   background: var(--sn-blue-700);
   box-shadow: var(--shadow-1), inset 0 0 0 1px rgb(255 255 255 / 13%);
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  font-weight: var(--weight-bold);
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-/* The amber cursor bar — the one place the accent is intentionally a shape. */
-.brand__mark i {
-  position: absolute;
-  inset-inline-end: 4px;
-  inset-block-end: 5px;
-  width: 2px;
-  height: 6px;
-  border-radius: 2px;
-  background: var(--amber);
 }
 
 .brand__copy {

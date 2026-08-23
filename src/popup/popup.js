@@ -131,7 +131,7 @@ async function loadUiTheme() {
     const stored = await chrome.storage.local.get(UI_THEME_KEY)
     uiTheme = sanitizeUiTheme(stored[UI_THEME_KEY])
   } catch (error) {
-    console.error('SnFont UI theme load failed:', error)
+    console.error('SnRead UI theme load failed:', error)
     uiTheme = DEFAULT_UI_THEME
   }
   renderUiTheme()
@@ -149,7 +149,7 @@ async function chooseUiTheme(next) {
   try {
     await chrome.storage.local.set({ [UI_THEME_KEY]: uiTheme })
   } catch (error) {
-    console.error('SnFont UI theme save failed:', error)
+    console.error('SnRead UI theme save failed:', error)
     uiTheme = previousTheme
     renderUiTheme()
     setSaveState('تعذّر حفظ المظهر', 'error')
@@ -193,7 +193,7 @@ function getScopeDraft() {
 }
 
 /**
- * The single place that decides what SnFont is *actually* doing in this tab.
+ * The single place that decides what SnRead is *actually* doing in this tab.
  * Returning null means the panel has nothing to warn about.
  */
 function describePageState() {
@@ -209,7 +209,7 @@ function describePageState() {
   if (state.status === 'inactive') {
     return {
       tone: 'inactive',
-      notice: 'لم يُحقن SnFont في هذه الصفحة بعد. أعد تحميلها مرة واحدة ليبدأ العمل.',
+      notice: 'لم يُحقن SnRead في هذه الصفحة بعد. أعد تحميلها مرة واحدة ليبدأ العمل.',
       footer: 'يحتاج إعادة تحميل',
     }
   }
@@ -225,7 +225,7 @@ function describePageState() {
   if (!state.settings.enabled) {
     return {
       tone: 'inactive',
-      notice: 'SnFont متوقف في كل المواقع. شغّله من المفتاح أعلى اللوحة.',
+      notice: 'SnRead متوقف في كل المواقع. شغّله من المفتاح أعلى اللوحة.',
       footer: 'متوقف عالميًا',
     }
   }
@@ -483,7 +483,7 @@ async function flushSave() {
       }
       setSaveState('تم الحفظ', 'ready')
     } catch (error) {
-      console.error('SnFont popup save failed:', error)
+      console.error('SnRead popup save failed:', error)
       setSaveState('تعذّر الحفظ', 'error')
     }
   })
@@ -573,7 +573,7 @@ function bindSiteControls() {
       )
       render()
     } catch (error) {
-      console.error('SnFont exclusion update failed:', error)
+      console.error('SnRead exclusion update failed:', error)
       elements.excludeSite.checked = state.excluded
       setSaveState('تعذّر الحفظ', 'error')
     }
@@ -600,7 +600,7 @@ function bindSiteControls() {
       await loadState()
       setSaveState('تمت الاستعادة', 'ready')
     } catch (error) {
-      console.error('SnFont reset failed:', error)
+      console.error('SnRead reset failed:', error)
       setSaveState('تعذّرت الاستعادة', 'error')
     }
   })
@@ -625,7 +625,7 @@ if (hasChromeApi()) {
   })
 
   void loadState().catch((error) => {
-    console.error('SnFont popup initialization failed:', error)
+    console.error('SnRead popup initialization failed:', error)
     setSaveState('تعذّر التحميل', 'error')
     elements.app.setAttribute('aria-busy', 'false')
   })

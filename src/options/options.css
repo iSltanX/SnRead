@@ -113,8 +113,9 @@ select:focus-visible,
 
 /* One lockup, two sizes: identical construction to the popup mark so the
    identity does not drift between surfaces. */
+/* The squircle is the ground; the glyph inside it comes from src/shared/icons.js
+   so the panel, the site manager and the exported icon files cannot drift. */
 .brand-mark {
-  position: relative;
   display: grid;
   width: 40px;
   height: 40px;
@@ -124,22 +125,6 @@ select:focus-visible,
   color: var(--sn-white);
   background: var(--sn-blue-700);
   box-shadow: var(--shadow-2), inset 0 0 0 1px rgb(255 255 255 / 13%);
-  font-family: var(--font-display);
-  font-size: var(--text-lg);
-  font-weight: var(--weight-bold);
-  line-height: 1;
-  letter-spacing: -0.055em;
-}
-
-/* The amber typographic cursor — the one shape the accent is allowed to be. */
-.brand-mark i {
-  position: absolute;
-  inset-inline-end: 6px;
-  inset-block-end: 8px;
-  width: 3px;
-  height: 10px;
-  border-radius: 2px;
-  background: var(--amber);
 }
 
 .brand-copy {

@@ -116,9 +116,9 @@ for (const sourcePath of [
 }
 
 if (errors.length) {
-  console.error(`SnFont validation failed (${errors.length}):`)
+  console.error(`SnRead validation failed (${errors.length}):`)
   for (const error of errors) console.error(`- ${error}`)
   process.exitCode = 1
 } else {
-  console.log('SnFont validation passed: manifest, locales, assets, CSP, commands, and runtime files are consistent.')
+  console.log('SnRead validation passed: manifest, locales, assets, CSP, commands, and runtime files are consistent.')
 }

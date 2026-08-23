@@ -1,12 +1,12 @@
 {
   "extensionName": {
-    "message": "SnFont — مساعد القراءة الذكي"
+    "message": "SnRead — مساعد القراءة الذكي"
   },
   "extensionDescription": {
     "message": "خطوط عربية وإنجليزية ذكية وتحكم مريح بالقراءة مع الحفاظ على تصميم المواقع."
   },
   "actionTitle": {
-    "message": "فتح إعدادات SnFont"
+    "message": "فتح إعدادات SnRead"
   },
   "commandIncrease": {
     "message": "تكبير حجم خط القراءة"
