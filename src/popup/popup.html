@@ -191,6 +191,24 @@
         </section>
       </div>
 
+      <!--
+        The commit bar is a grid row, not a floating overlay, so it can never
+        scroll away. Its space is reserved at all times — not popped in with
+        `hidden` — so its appearance can never shift a control the user is
+        about to click into the space a button just occupied; only its paint
+        (opacity/visibility) toggles with an unsaved edit. See popup.css.
+      -->
+      <div class="commit-bar" id="commit-bar" aria-hidden="true">
+        <p class="commit-bar__hint" id="commit-hint">تغييرات غير محفوظة</p>
+        <div class="commit-bar__actions">
+          <button class="commit-button" type="button" id="undo-settings">تراجع</button>
+          <button class="commit-button commit-button--primary" type="button" id="save-settings">
+            <span data-icon="check" data-icon-size="14"></span>
+            حفظ
+          </button>
+        </div>
+      </div>
+
       <footer class="app-footer">
         <span id="tab-status">مفعّل حاليًا في هذا التبويب</span>
         <div class="footer-actions">

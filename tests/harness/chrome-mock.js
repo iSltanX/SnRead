@@ -52,34 +52,43 @@
   const onChanged = createEvent()
   const onMessage = createEvent()
 
-  const local = {
+  /** Both storage areas share this shape; only their backing object and the
+   *  `areaName` on change events differ. Real session storage outlives the
+   *  popup closing but not the browser itself — the harness cannot model that
+   *  (it is one page, reloaded fresh each time), so this is memory-only, just
+   *  like `local` here, and exists so code that calls chrome.storage.session
+   *  runs instead of finding the API absent. */
+  const createArea = (backing, areaName) => ({
     async get(keys) {
-      if (keys == null) return clone(store)
-      if (typeof keys === 'string') return { [keys]: clone(store[keys]) }
-      if (Array.isArray(keys)) return Object.fromEntries(keys.map((k) => [k, clone(store[k])]))
+      if (keys == null) return clone(backing)
+      if (typeof keys === 'string') return { [keys]: clone(backing[keys]) }
+      if (Array.isArray(keys)) return Object.fromEntries(keys.map((k) => [k, clone(backing[k])]))
       return Object.fromEntries(
-        Object.entries(keys).map(([k, fallback]) => [k, clone(store[k] === undefined ? fallback : store[k])]),
+        Object.entries(keys).map(([k, fallback]) => [k, clone(backing[k] === undefined ? fallback : backing[k])]),
       )
     },
     async set(update) {
       const changes = {}
       for (const [key, newValue] of Object.entries(update)) {
-        changes[key] = { oldValue: clone(store[key]), newValue: clone(newValue) }
-        store[key] = clone(newValue)
+        changes[key] = { oldValue: clone(backing[key]), newValue: clone(newValue) }
+        backing[key] = clone(newValue)
       }
-      queueMicrotask(() => onChanged.emit(changes, 'local'))
+      queueMicrotask(() => onChanged.emit(changes, areaName))
     },
     async remove(keys) {
       const list = Array.isArray(keys) ? keys : [keys]
       const changes = {}
       for (const key of list) {
-        if (!(key in store)) continue
-        changes[key] = { oldValue: clone(store[key]), newValue: undefined }
-        delete store[key]
+        if (!(key in backing)) continue
+        changes[key] = { oldValue: clone(backing[key]), newValue: undefined }
+        delete backing[key]
       }
-      if (Object.keys(changes).length) queueMicrotask(() => onChanged.emit(changes, 'local'))
+      if (Object.keys(changes).length) queueMicrotask(() => onChanged.emit(changes, areaName))
     },
-  }
+  })
+
+  const local = createArea(store, 'local')
+  const session = createArea({}, 'session')
 
   // callback-style overloads used by the options page
   const wrap = (fn) => (...args) => {
@@ -118,6 +127,7 @@
     },
     storage: {
       local: { get: wrap(local.get), set: wrap(local.set), remove: wrap(local.remove) },
+      session: { get: wrap(session.get), set: wrap(session.set), remove: wrap(session.remove) },
       onChanged,
     },
     action: {

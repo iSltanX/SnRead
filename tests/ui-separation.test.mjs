@@ -11,13 +11,14 @@ import test from 'node:test'
 
 const read = (path) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
-const [popupHtml, popupCss, popupJs, optionsHtml, optionsJs, contentJs, tokensCss] =
+const [popupHtml, popupCss, popupJs, optionsHtml, optionsJs, optionsCss, contentJs, tokensCss] =
   await Promise.all([
     read('src/popup/popup.html'),
     read('src/popup/popup.css'),
     read('src/popup/popup.js'),
     read('src/options/options.html'),
     read('src/options/options.js'),
+    read('src/options/options.css'),
     read('src/content/content.js'),
     read('src/shared/tokens.css'),
   ])
@@ -238,7 +239,174 @@ test('the popup edits the scope that actually governs the tab', () => {
   assert.match(popupJs, /function governingScope\(\)/)
   assert.match(popupJs, /return mergeSettings\(state\.settings, state\.siteOverride\)/)
   assert.match(popupJs, /tone: 'scoped'/)
-  assert.match(popupJs, /const target = scope \?\? governing\.scope/)
+  // The save path resolves the scope from the tab, and the commit bar says which.
+  assert.match(popupJs, /const \{ scope, rule \} = governingScope\(\)/)
+  assert.match(popupJs, /تغييرات غير محفوظة على \u2068\$\{governing\.rule\}\u2069/)
+})
+
+test('the popup is a draft until the user presses «حفظ»', () => {
+  assert.match(popupHtml, /id="save-settings"/)
+  assert.match(popupHtml, /id="undo-settings"/)
+  // Short labels: the panel is 360px wide and the site manager owns the long form.
+  const bar = popupHtml.slice(
+    popupHtml.indexOf('<div class="commit-bar"'),
+    popupHtml.indexOf('<footer class="app-footer">'),
+  )
+  assert.ok(bar.length > 100, 'commit bar slice must be bounded')
+  assert.match(bar, /id="undo-settings"[^>]*>\s*تراجع\s*</)
+  assert.match(bar, /حفظ\s*<\/button>/)
+  assert.doesNotMatch(bar, /حفظ التخصيص/)
+  // The bar starts invisible to assistive tech, but not `hidden`/display:none —
+  // its row stays reserved so its appearance can never shift a nearby control
+  // out from under a click. See the CSS-jump test below.
+  assert.match(popupHtml, /id="commit-bar" aria-hidden="true"/)
+  assert.doesNotMatch(popupHtml, /id="commit-bar"[^>]* hidden/)
+
+  assert.match(popupJs, /function saveDraft\(\)/)
+  assert.match(popupJs, /function undoDraft\(\)/)
+  assert.match(popupJs, /function isDirty\(\)/)
+  // «تراجع» restores what storage holds, not a guess.
+  assert.match(popupJs, /draft = \{ \.\.\.savedDraft \}/)
+})
+
+test('DRAFT_KEYS covers every setting the panel can edit', async () => {
+  // A setting missing from this list fails silently and expensively: its
+  // control still moves and still drives the preview, but isDirty() cannot see
+  // it, so the commit bar never appears and the edit is discarded on close.
+  const declared = popupJs.match(/const DRAFT_KEYS = Object\.freeze\(\[([\s\S]*?)\]\)/)?.[1] ?? ''
+  const draftKeys = [...declared.matchAll(/'([^']+)'/g)].map((match) => match[1])
+  const settingsSource = await read('src/shared/settings.js')
+  const defaults = settingsSource.match(/DEFAULT_SETTINGS = Object\.freeze\(\{([\s\S]*?)\n\}\)/)?.[1] ?? ''
+  const settingKeys = [...defaults.matchAll(/^\s{2}(\w+):/gm)].map((match) => match[1])
+
+  assert.ok(settingKeys.length > 5, 'DEFAULT_SETTINGS slice must be bounded')
+  assert.deepEqual(
+    [...draftKeys, 'enabled'].sort(),
+    [...settingKeys].sort(),
+    'every setting is either in the draft or is the master switch',
+  )
+
+  // And every control the markup binds must be one of them.
+  const bound = [...popupHtml.matchAll(/data-setting="(\w+)"/g)].map((match) => match[1])
+  for (const key of bound) {
+    assert.ok(
+      draftKeys.includes(key) || key === 'enabled',
+      `control data-setting="${key}" is bound but not covered by DRAFT_KEYS`,
+    )
+  }
+})
+
+test('every popup write is serialised behind the last one', () => {
+  // The worker resolves updateSettings by read-modify-write, so two messages in
+  // flight together can lose a patch. The old code serialised through
+  // `saveChain`; nothing may send a settings message outside the replacement.
+  assert.match(popupJs, /function queueWrite\(task\)/)
+  // Reads (getSettings) are free; the three writing message types are not.
+  for (const kind of ['updateSettings', 'setExcluded', 'resetSettings']) {
+    const uses = [...popupJs.matchAll(new RegExp(`MESSAGE\\.${kind}`, 'g'))]
+    assert.ok(uses.length > 0, `${kind} must still be sent`)
+    for (const use of uses) {
+      const preceding = popupJs.slice(Math.max(0, use.index - 220), use.index)
+      assert.match(
+        preceding,
+        /queueWrite\(\(\) => chrome\.runtime\.sendMessage\(\{$/m,
+        `MESSAGE.${kind} is sent outside queueWrite`,
+      )
+    }
+  }
+  // A save must not be able to strand the panel in an unclearable dirty state.
+  const save = popupJs.slice(popupJs.indexOf('async function saveDraft()'), popupJs.indexOf('function undoDraft()'))
+  assert.match(save, /\} finally \{[\s\S]*saveInFlight = false/)
+  // Nor discard an edit made while the write was in flight.
+  assert.match(popupJs, /function adoptSavedState\(submitted\)/)
+  assert.match(popupJs, /if \(draft\[key\] !== submitted\[key\]\) inFlightEdits\[key\] = draft\[key\]/)
+})
+
+test('a failed global-switch write rolls the panel back', () => {
+  const writer = popupJs.slice(
+    popupJs.indexOf('async function writeGlobalSwitch(enabled)'),
+    popupJs.indexOf('function bindModeControls()'),
+  )
+  assert.ok(writer.length > 100, 'writeGlobalSwitch slice must be bounded')
+  assert.match(writer, /const previousSettings = state\.settings/)
+  assert.match(writer, /state\.settings = previousSettings/)
+})
+
+test('the panel state reads storage, not the unsaved draft', () => {
+  // readingRootFound reports on the mode the engine actually ran, which is the
+  // saved one. Asking it about a draft mode made the footer describe a state
+  // the page was not in — and hid the "governed by rule X" notice behind it.
+  const describe = popupJs.slice(
+    popupJs.indexOf('function describePageState()'),
+    popupJs.indexOf('function renderPreview()'),
+  )
+  assert.ok(describe.length > 200, 'describePageState slice must be bounded')
+  assert.doesNotMatch(describe, /\bdraft\./, 'describePageState must not read the draft')
+  assert.match(describe, /savedDraft\.mode === 'reading'/)
+})
+
+test('no timer or control change in the popup can reach storage', () => {
+  // Every autosave path is gone: debounce, queue, flush and the save chain.
+  for (const ghost of ['queuePatch', 'flushSave', 'pendingSave', 'SAVE_DEBOUNCE_MS', 'saveChain']) {
+    assert.doesNotMatch(popupJs, new RegExp(ghost), `autosave remnant survives: ${ghost}`)
+  }
+  const timers = [...popupJs.matchAll(/setTimeout\(\s*([^,]+),/g)].map((match) => match[1].trim())
+  for (const callback of timers) {
+    assert.doesNotMatch(callback, /saveDraft|sendMessage/, `timer writes storage: ${callback}`)
+  }
+
+  // Exactly one function may send an updateSettings message for the draft, and
+  // it runs from the button. The master switch keeps its own single-act path.
+  const senders = [...popupJs.matchAll(/MESSAGE\.updateSettings/g)].length
+  assert.equal(senders, 2, 'only saveDraft and writeGlobalSwitch may update settings')
+  assert.match(popupJs, /elements\.saveSettings\.addEventListener\('click', \(\) => void saveDraft\(\)\)/)
+})
+
+test('the popup commit bar cannot scroll out of reach', () => {
+  // The site manager shipped a save button below the fold in 1.3; the popup
+  // takes the lesson as a grid row rather than a sticky overlay.
+  assert.match(popupCss, /grid-template-rows: auto auto minmax\(0, 1fr\) auto auto;/)
+  const bar = popupCss.slice(popupCss.indexOf('.commit-bar {'), popupCss.indexOf('.app-footer {'))
+  assert.ok(bar.length > 100, 'commit bar CSS slice must be bounded')
+  assert.doesNotMatch(bar, /position:\s*(absolute|fixed|sticky)/)
+})
+
+test('the commit bar cannot shift a control out from under a click', () => {
+  // `hidden`/display:none used to pop the row in and out of the grid, so an
+  // edit that fired the bar shrank the scroll region by 44px in the very frame
+  // a control near the bottom was clicked — a fast second click could land on
+  // the button that had just appeared instead of the control the user meant.
+  // The row must stay in layout at all times; only its paint may toggle.
+  assert.doesNotMatch(popupHtml, /id="commit-bar"[^>]* hidden(?![-=])/)
+  assert.doesNotMatch(popupCss, /\.commit-bar\[hidden\]/)
+  const bar = popupCss.slice(popupCss.indexOf('.commit-bar {'), popupCss.indexOf('.commit-bar__hint'))
+  assert.ok(bar.length > 100, 'commit bar CSS slice must be bounded')
+  assert.match(bar, /min-height: 44px;/)
+  assert.match(bar, /opacity: 0;/)
+  assert.match(bar, /visibility: hidden;/)
+  assert.match(popupCss, /\.commit-bar\.is-visible \{\s*opacity: 1;\s*visibility: visible;/)
+  assert.match(popupJs, /elements\.commitBar\.classList\.toggle\('is-visible', dirty\)/)
+})
+
+test('hint text on the amber ground matches the site manager, not a third treatment', () => {
+  // popup .notice, popup .commit-bar__hint and options .editor-actions__hint
+  // all render text on --notice-bg; the three used to disagree on colour and
+  // weight for no reason tied to their actual role. The two "hint beside a
+  // commit button" cases — this one and options.css's — must now match.
+  const hint = popupCss.slice(
+    popupCss.indexOf('.commit-bar__hint {'),
+    popupCss.indexOf('.commit-bar__actions {'),
+  )
+  assert.ok(hint.length > 50, 'commit-bar__hint CSS slice must be bounded')
+  assert.match(hint, /color: var\(--text-muted\);/)
+  assert.doesNotMatch(hint, /--amber-ink/)
+  assert.doesNotMatch(hint, /font-weight/)
+
+  const optionsHint = optionsCss.slice(
+    optionsCss.indexOf('.editor-actions__hint {'),
+    optionsCss.indexOf('.editor-actions__buttons {'),
+  )
+  assert.match(optionsHint, /color: var\(--text-muted\);/)
 })
 
 test('the live preview shows both scripts at the same size', () => {
@@ -260,4 +428,53 @@ test('letter-spacing says what it can actually do', () => {
     popupHtml.indexOf('id="letter-spacing-output"'),
   )
   assert.match(control, /<small>[^<]*اللاتيني/)
+})
+
+test('an unsaved draft survives the popup closing, without touching real settings', () => {
+  // chrome.storage.session — not local, not the actual settings key — so a
+  // leftover draft can never be mistaken for, or outlive, a real save.
+  assert.match(popupJs, /const SESSION_DRAFT_KEY = 'snread\.popupDraft'/)
+  assert.match(popupJs, /function hasSessionStorage\(\)/)
+  assert.match(popupJs, /chrome\.storage\.session/)
+  assert.doesNotMatch(popupJs, /chrome\.storage\.local\.(get|set)\([^)]*SESSION_DRAFT_KEY/)
+
+  // Scoped per site/global target, so a draft on one site cannot leak onto
+  // another, or onto the global settings.
+  assert.match(popupJs, /function draftScopeKey\(scope, hostname\)/)
+
+  // Restored on load, before the first paint, so the bar shows dirty
+  // immediately instead of flashing clean and then jumping.
+  const loadState = popupJs.slice(
+    popupJs.indexOf('async function loadState()'),
+    popupJs.indexOf('/* ── Persistence'),
+  )
+  assert.ok(loadState.length > 200, 'loadState slice must be bounded')
+  assert.match(loadState, /await restoreSessionDraft\(\)/)
+  assert.match(loadState, /await restoreSessionDraft\(\)\s*\n\s*render\(\)/)
+
+  // Persisted from the one place every draft mutation already flows through,
+  // so no call site can move the draft without also updating the cache.
+  assert.match(popupJs, /function renderCommitBar\(\)[\s\S]*persistSessionDraft\(\)/)
+
+  // Restoring merges onto the *current* saved baseline, not a frozen snapshot:
+  // a rule saved elsewhere while the popup was closed must still win on
+  // whatever the leftover draft never touched.
+  assert.match(popupJs, /draft = sanitizeSettings\(\{ \.\.\.savedDraft, \.\.\.patch \}\)/)
+})
+
+test('the session-draft cache degrades to nothing without chrome.storage.session', () => {
+  // The static preview (tests/harness) and any pre-102 edge case must not
+  // throw — hasSessionStorage() guards every call site.
+  const cache = popupJs.slice(
+    popupJs.indexOf('function hasSessionStorage()'),
+    popupJs.indexOf('async function restoreSessionDraft()'),
+  )
+  assert.ok(cache.length > 200, 'session-draft cache slice must be bounded')
+  for (const fn of ['persistSessionDraft', 'restoreSessionDraft']) {
+    const body = popupJs.slice(
+      popupJs.indexOf(`function ${fn}(`),
+      popupJs.indexOf('}\n', popupJs.indexOf(`function ${fn}(`) + 200),
+    )
+    assert.match(body, /if \(!hasSessionStorage\(\)\) return/, `${fn} must guard on hasSessionStorage()`)
+  }
 })
