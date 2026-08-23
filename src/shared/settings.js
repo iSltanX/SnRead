@@ -150,6 +150,19 @@ export function mergeSettings(base, override) {
   })
 }
 
+/**
+ * A hostname the browser could actually navigate to: dot-separated labels of
+ * letters, digits and inner hyphens, or a bracketed IPv6 literal.
+ *
+ * The URL parser alone is not a validator here, and the two engines disagree:
+ * Chromium percent-encodes a space inside a host (`not a domain!!` becomes
+ * `not%20a%20domain!!`) while Node's parser rejects it. Validating the parser's
+ * output keeps the shipped browser and the test runner on the same contract,
+ * and keeps rules that can never match any site out of storage.
+ */
+const HOSTNAME_PATTERN =
+  /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*)$/
+
 export function normalizeHostname(value) {
   if (typeof value !== 'string') return ''
   const trimmed = value.trim().toLowerCase().replace(/^\*\./, '')
@@ -159,7 +172,8 @@ export function normalizeHostname(value) {
     const hostname = trimmed.includes('://')
       ? new URL(trimmed).hostname
       : new URL(`https://${trimmed}`).hostname
-    return hostname.replace(/^www\./, '').replace(/\.$/, '')
+    const normalized = hostname.replace(/^www\./, '').replace(/\.$/, '')
+    return HOSTNAME_PATTERN.test(normalized) ? normalized : ''
   } catch {
     return ''
   }

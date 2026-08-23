@@ -21,6 +21,8 @@ const FONT_SIZE_MAX = 32
 const FONT_SIZE_STEP = 2
 const BADGE_ON = '#34C759'
 const BADGE_OFF = '#8E8E93'
+const BADGE_LIMIT = '#E8A838'
+const BADGE_FLASH_MS = 1100
 
 async function readState() {
   const stored = await chrome.storage.local.get(Object.values(STORAGE_KEYS))
@@ -35,6 +37,41 @@ async function readState() {
 async function updateBadge(enabled) {
   await chrome.action.setBadgeBackgroundColor({ color: enabled ? BADGE_ON : BADGE_OFF })
   await chrome.action.setBadgeText({ text: enabled ? '' : 'OFF' })
+}
+
+/**
+ * The global switch is not the whole truth: an excluded site, or one a site rule
+ * turned off, is just as inactive. Reading a tab's URL would need the `tabs`
+ * permission, so the badge follows the tab whose own content script just asked
+ * for its settings — `sender.tab.id` needs no permission at all.
+ */
+async function updateTabBadge(tabId, enabled) {
+  if (typeof tabId !== 'number') return
+  try {
+    await chrome.action.setBadgeBackgroundColor({ tabId, color: enabled ? BADGE_ON : BADGE_OFF })
+    await chrome.action.setBadgeText({ tabId, text: enabled ? '' : 'OFF' })
+  } catch {
+    // The tab closed between the message and the paint.
+  }
+}
+
+/**
+ * Says out loud that a shortcut did nothing. Pressing "bigger" at 32px used to
+ * be indistinguishable from a shortcut the system had swallowed.
+ */
+async function flashBadge(tabId, text) {
+  try {
+    const target = typeof tabId === 'number' ? { tabId } : {}
+    await chrome.action.setBadgeBackgroundColor({ ...target, color: BADGE_LIMIT })
+    await chrome.action.setBadgeText({ ...target, text })
+    await new Promise((resolve) => setTimeout(resolve, BADGE_FLASH_MS))
+    const stored = await chrome.storage.local.get(STORAGE_KEYS.settings)
+    const enabled = sanitizeSettings(stored[STORAGE_KEYS.settings]).enabled
+    await chrome.action.setBadgeBackgroundColor({ ...target, color: enabled ? BADGE_ON : BADGE_OFF })
+    await chrome.action.setBadgeText({ ...target, text: enabled ? '' : 'OFF' })
+  } catch {
+    // The tab closed mid-flash.
+  }
 }
 
 async function ensureDefaults() {
@@ -89,20 +126,35 @@ async function saveSiteSettings(state, hostname, patch) {
 }
 
 /**
+ * Drops keys from one site rule. `reset` has to mean "inherit the global size
+ * again"; writing 16px into the rule pinned the site there forever, so changing
+ * the global size later left exactly that site behind.
+ */
+async function clearSiteSettingKeys(state, hostname, keys) {
+  const existing = state.siteSettings[hostname]
+  if (!existing) return state.siteSettings
+  const remaining = { ...existing }
+  for (const key of keys) delete remaining[key]
+  const cleaned = sanitizeSiteSettings({ ...state.siteSettings, [hostname]: remaining })
+  await chrome.storage.local.set({ [STORAGE_KEYS.siteSettings]: cleaned })
+  return cleaned
+}
+
+/**
  * Best-effort hostname for the tab the shortcut was pressed on. `activeTab`
  * makes `tab.url` readable at invocation time; the content script answers when
  * it does not (older grants, or a tab the user never focused).
  */
-async function activeTabHostname() {
+async function activeTabContext() {
   try {
     const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
-    if (!tab?.id) return ''
-    if (tab.url) return normalizeHostname(new URL(tab.url).hostname)
+    if (!tab?.id) return { id: null, hostname: '' }
+    if (tab.url) return { id: tab.id, hostname: normalizeHostname(new URL(tab.url).hostname) }
     const response = await chrome.tabs.sendMessage(tab.id, { type: MESSAGE.pageState })
-    return response?.ok ? normalizeHostname(response.hostname) : ''
+    return { id: tab.id, hostname: response?.ok ? normalizeHostname(response.hostname) : '' }
   } catch {
     // Protected pages, closed tabs, and tabs without our content script.
-    return ''
+    return { id: null, hostname: '' }
   }
 }
 
@@ -136,7 +188,7 @@ function commandPatch(command, current) {
 
 async function updateFromCommand(command) {
   const state = await readState()
-  const hostname = await activeTabHostname()
+  const { id: tabId, hostname } = await activeTabContext()
   const { rule, override } = findSiteOverrideEntry(hostname, state.siteSettings)
   // A shortcut must change what the user is actually looking at. When a site
   // rule governs this tab, edit that rule; a global write would be a silent
@@ -145,10 +197,23 @@ async function updateFromCommand(command) {
   const current = scopedToRule ? mergeSettings(state.settings, override) : state.settings
 
   // The master switch is global by definition — a site rule cannot re-enable it.
+  // Reset means "inherit again", so on a site rule it removes the size keys
+  // rather than writing the default into the rule.
+  if (scopedToRule && command === 'reset-font-size') {
+    await clearSiteSettingKeys(state, rule, ['fontSize', 'fontSizePreset'])
+    return
+  }
+
   const patch = commandPatch(command, command === 'toggle-font-enhancements'
     ? state.settings
     : current)
-  if (!patch) return
+  if (!patch) {
+    // Already at 10px or 32px: show the limit instead of doing nothing quietly.
+    if (command === 'increase-font-size' || command === 'decrease-font-size') {
+      await flashBadge(tabId, String(Math.round(current.fontSize)))
+    }
+    return
+  }
 
   if (scopedToRule && command !== 'toggle-font-enhancements') {
     await saveSiteSettings(state, rule, patch)
@@ -183,17 +248,25 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const handle = async () => {
     const state = await readState()
     // A tab's own hostname is authoritative for anything a content script asks.
-    // Only the popup, which has no tab of its own, may name a host explicitly.
+    // Only the popup, which has no tab of its own, may name a host explicitly —
+    // and an extension page loaded *in* a tab is not a web page: taking its
+    // chrome-extension:// host as the site would answer every question about the
+    // extension's own id instead of the site the user is looking at.
     let senderHostname = ''
     try {
-      senderHostname = sender.tab?.url ? new URL(sender.tab.url).hostname : ''
+      const senderUrl = sender.tab?.url ? new URL(sender.tab.url) : null
+      senderHostname = senderUrl && (senderUrl.protocol === 'http:' || senderUrl.protocol === 'https:')
+        ? senderUrl.hostname
+        : ''
     } catch {
       // Internal browser pages do not always expose a standard URL.
     }
     const hostname = normalizeHostname(senderHostname || message.hostname)
 
     if (message.type === MESSAGE.getSettings) {
-      return { ok: true, ...state, ...getEffectiveSiteSettings({ hostname, ...state }) }
+      const resolved = getEffectiveSiteSettings({ hostname, ...state })
+      void updateTabBadge(sender.tab?.id, resolved.effectiveSettings.enabled)
+      return { ok: true, ...state, ...resolved }
     }
 
     if (message.type === MESSAGE.updateSettings) {

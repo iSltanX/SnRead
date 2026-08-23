@@ -8,7 +8,7 @@
  * Theming contract: `document.documentElement.dataset.theme` is always one of
  * `light`, `dark`, or `system`. Dark values are declared twice on purpose — once
  * for the explicit choice and once for the system preference — and
- * tests/tokens.test.mjs asserts the two blocks stay byte-identical.
+ * tests/design-system.test.mjs asserts the two blocks stay identical.
  */
 
 /* ── Font faces ────────────────────────────────────────────────────────────────
@@ -90,7 +90,6 @@
   --sn-blue-600: #245b98;
   --sn-blue-500: #315f8f;
   --sn-blue-300: #9fc6ee;
-  --sn-blue-100: #e4edf7;
 
   --sn-amber-700: #7d5104; /* text-safe amber, light surfaces only */
   --sn-amber-500: #e8a838; /* Accent Amber */
@@ -125,7 +124,6 @@
   --surface: var(--sn-white);
   --surface-raised: var(--sn-white);
   --surface-sunken: var(--sn-grey-050);
-  --surface-inverted: var(--sn-ink-900);
 
   --text: var(--sn-ink-900);
   --text-muted: var(--sn-slate-600);
@@ -150,15 +148,10 @@
   --warning: var(--sn-orange-500);
   --danger: var(--sn-red-600);
 
-  --icon-quiet: var(--sn-slate-500);
-
   /* The notice banner ground — a real role, not an inline computation, so
      the Figma variable and the CSS resolve to the same colour. */
   --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
   --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
-
-  /* The notice banner ground — a real role, not an inline computation, so the
-     Figma variable and the CSS resolve to the same colour. */
 
   --shadow-1: 0 1px 3px rgb(19 43 73 / 8%);
   --shadow-2: 0 12px 32px rgb(19 43 73 / 8%);
@@ -215,7 +208,6 @@
   /* ── Control geometry ────────────────────────────────────────────────────── */
   --control-height-sm: 28px;
   --control-height-md: 36px;
-  --control-height-lg: 44px;
   --hit-target: 24px;
 }
 
@@ -229,7 +221,6 @@
     --surface: var(--sn-grey-850);
     --surface-raised: var(--sn-grey-800);
     --surface-sunken: var(--sn-grey-880);
-    --surface-inverted: var(--sn-ink-100);
 
     --text: var(--sn-ink-100);
     --text-muted: #b8b8bf;
@@ -254,12 +245,8 @@
     --warning: #ffb340;
     --danger: var(--sn-red-300);
 
-    --icon-quiet: #9a9aa0;
-
     --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
     --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);
-
-
 
     --shadow-1: 0 1px 3px rgb(0 0 0 / 32%);
     --shadow-2: 0 12px 32px rgb(0 0 0 / 34%);
@@ -277,7 +264,6 @@
   --surface: var(--sn-grey-850);
   --surface-raised: var(--sn-grey-800);
   --surface-sunken: var(--sn-grey-880);
-  --surface-inverted: var(--sn-ink-100);
 
   --text: var(--sn-ink-100);
   --text-muted: #b8b8bf;
@@ -301,8 +287,6 @@
   --success: var(--sn-green-500);
   --warning: #ffb340;
   --danger: var(--sn-red-300);
-
-  --icon-quiet: #9a9aa0;
 
   --notice-bg: color-mix(in srgb, var(--warning), var(--surface) 92%);
   --notice-border: color-mix(in srgb, var(--warning), var(--border) 60%);

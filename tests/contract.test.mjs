@@ -81,6 +81,21 @@ test('the content script mirrors the shared clamp ranges', () => {
   assert.deepEqual(Object.keys(limits).sort(), ['fontSize', 'letterSpacing', 'lineHeight', 'textWidth'])
 })
 
+test('the content script mirrors the shared hostname validator', async () => {
+  // Chromium and Node disagree about what `new URL()` will accept as a host, so
+  // the pattern is the contract — not the parser. Both copies must be the same
+  // pattern, or the engine and the settings surfaces would disagree about which
+  // sites a rule covers.
+  const sharedSource = await read('src/shared/settings.js')
+  const patternOf = (source) => source
+    .match(/HOSTNAME_PATTERN =\s*\n?\s*(\/\^.*\$\/)/)?.[1]
+
+  const shared = patternOf(sharedSource)
+  const content = patternOf(contentJs)
+  assert.ok(shared, 'src/shared/settings.js must declare HOSTNAME_PATTERN')
+  assert.equal(content, shared, 'the two hostname patterns have drifted')
+})
+
 test('no surface hardcodes a message type that the shared module owns', () => {
   for (const [name, source] of [['popup.js', popupJs], ['service-worker.js', serviceWorkerJs]]) {
     const literals = [...source.matchAll(/'(SNFONT_[A-Z_]+)'/g)].map((match) => match[1])

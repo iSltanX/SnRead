@@ -420,6 +420,17 @@ summary:focus-visible {
   color: var(--warning);
 }
 
+/* A site rule governing this tab is information, not a warning: the engine is
+   working, it is simply answering to a rule rather than the global settings. */
+.notice[data-tone="info"] {
+  border-color: var(--border-strong);
+  background: var(--accent-wash);
+}
+
+.notice[data-tone="info"] .notice__icon {
+  color: var(--accent-ink);
+}
+
 /* ── Appearance ────────────────────────────────────────────────────────────── */
 
 /* A three-way segmented control, the way macOS states an appearance choice:
@@ -835,6 +846,15 @@ input[type="range"]:disabled {
   gap: 1px;
   min-width: 0;
   font-size: var(--text-2xs);
+}
+
+.range-control__copy small {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-weight: var(--weight-regular);
+  line-height: var(--leading-snug);
+  text-overflow: ellipsis;
 }
 
 .toggle-row__copy small {

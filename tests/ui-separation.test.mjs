@@ -102,9 +102,21 @@ test('reading CSS never recolors host pages and has no body fallback', () => {
   // The reading measure lands on prose blocks, never on the root container:
   // narrowing a container can collapse a grid it owns.
   assert.match(cssBuilder, /\[\$\{READING_ROOT_MARKER\}\] \[\$\{PROSE_MARKER\}="1"\] \{\s*\n\s*max-width/)
-  // Size and leading reflow their box, so they are confined to prose.
+  // Anything that reflows a box is confined to prose — tracking included: at
+  // 0.2em it widened a badge by 35% while doing nothing at all for Arabic.
   const familyRule = cssBuilder.slice(cssBuilder.indexOf('[${MARKER}="1"] {'))
-  assert.doesNotMatch(familyRule.slice(0, familyRule.indexOf('}')), /font-size|line-height/)
+  assert.doesNotMatch(
+    familyRule.slice(0, familyRule.indexOf('}')),
+    /font-size|line-height|letter-spacing/,
+  )
+  const proseRule = cssBuilder.slice(cssBuilder.indexOf('.snfont-active [${PROSE_MARKER}="1"] {'))
+  assert.match(proseRule.slice(0, 400), /font-size[\s\S]*line-height[\s\S]*letter-spacing/)
+
+  // One measure for every prose block. `ch` resolves against each element's own
+  // font size, so the same rule used to hand a heading a different width.
+  assert.doesNotMatch(cssBuilder, /max-width:[^;]*ch/)
+  assert.match(cssBuilder, /max-width: \$\{measurePx\.toFixed\(2\)\}px/)
+  assert.match(cssBuilder, /box-sizing: border-box/)
 
   const rootFinder = contentJs.slice(
     contentJs.indexOf('function findSafeReadingRoot()'),
@@ -149,4 +161,95 @@ test('the page engine only resizes prose, never application chrome', () => {
   assert.doesNotMatch(contentJs, /hasAuthoredTypography/)
   assert.match(contentJs, /function isProtectedTypography\(computedStyle\)/)
   assert.match(contentJs, /MINIMUM_PROSE_RATIO/)
+})
+
+test('a settings change re-tunes the page instead of rebuilding it', () => {
+  // Tearing every marker off and rescanning cost ~0.6s of blocked main thread on
+  // a large page and flashed the whole document back to its original type — four
+  // times a second while a slider was moving.
+  assert.match(contentJs, /function commitSettings\(nextSettings, nextExcluded\)/)
+  assert.match(contentJs, /function remeasureTypography\(/)
+  assert.match(contentJs, /const structural =/)
+  assert.match(contentJs, /settings\.mode !== previous\.mode/)
+  assert.match(contentJs, /styleElement\.textContent = buildCss\(\)/)
+
+  // loadSettings must never call apply() directly any more: the decision about
+  // whether a rebuild is needed lives in exactly one place.
+  const loader = contentJs.slice(
+    contentJs.indexOf('async function loadSettings()'),
+    contentJs.indexOf('function scheduleSettingsReload()'),
+  )
+  assert.ok(loader.length > 200, 'loadSettings slice must be bounded')
+  assert.doesNotMatch(loader, /\n\s*apply\(\)/)
+  assert.match(loader, /commitSettings\(/)
+
+  // A page restyle re-validates instead of tearing down.
+  assert.match(contentJs, /function refreshTypography\(\)/)
+  assert.match(contentJs, /remeasureTypography\(\{ revalidate: true \}\)/)
+})
+
+test('the engine follows the page when the viewport moves', () => {
+  // A breakpoint or a clamp() size changes the page's own type with no DOM
+  // mutation at all, so nothing else would ever report the pinned ratio stale.
+  assert.match(contentJs, /window\.addEventListener\('resize', scheduleRemeasure/)
+  assert.match(contentJs, /function scheduleRemeasure\(\)/)
+  assert.match(contentJs, /RESIZE_SETTLE_MS/)
+})
+
+test('an article header is content, not site chrome', () => {
+  const boundary = contentJs.slice(
+    contentJs.indexOf('function isInsideUiBoundary(element)'),
+    contentJs.indexOf('function eligibleElement'),
+  )
+  assert.ok(boundary.length > 200 && boundary.length < 1600, 'boundary slice must be bounded')
+  // nav and aside are always chrome; a header/footer is only chrome outside the
+  // content root. Wikipedia keeps its <h1> in a <header> inside <main>.
+  assert.match(boundary, /boundary\.tagName !== 'HEADER' && boundary\.tagName !== 'FOOTER'/)
+  assert.match(boundary, /ROOT_CANDIDATE_SELECTOR/)
+  assert.match(boundary, /\[role="banner"\], \[role="contentinfo"\]/)
+})
+
+test('open shadow roots are part of the page', () => {
+  assert.match(contentJs, /function adoptShadowRoot\(shadowRoot\)/)
+  assert.match(contentJs, /function buildShadowCss\(\)/)
+  // The document hook lives on <html>, outside every shadow boundary, and the
+  // sheet is derived from buildCss() so the two can never drift.
+  assert.match(contentJs, /buildCss\(\)\.replaceAll\('\.snfont-active ', ''\)/)
+  assert.match(contentJs, /adoptedStyleSheets/)
+  assert.match(contentJs, /NodeFilter\.SHOW_TEXT \| NodeFilter\.SHOW_ELEMENT/)
+  // Teardown has to reach inside them too, or a disabled extension would leave
+  // web components restyled.
+  assert.match(contentJs, /function releaseShadowRoots\(\)/)
+})
+
+test('the popup edits the scope that actually governs the tab', () => {
+  // Still no scope *switch* — the scope follows the tab, exactly as the keyboard
+  // shortcuts have always done, and the panel names the rule it is editing.
+  assert.doesNotMatch(popupHtml, /data-scope=/)
+  assert.doesNotMatch(popupJs, /selectedScope/)
+  assert.match(popupJs, /function governingScope\(\)/)
+  assert.match(popupJs, /return mergeSettings\(state\.settings, state\.siteOverride\)/)
+  assert.match(popupJs, /tone: 'scoped'/)
+  assert.match(popupJs, /const target = scope \?\? governing\.scope/)
+})
+
+test('the live preview shows both scripts at the same size', () => {
+  const preview = popupJs.slice(
+    popupJs.indexOf('function renderPreview()'),
+    popupJs.indexOf('function render()'),
+  )
+  assert.ok(preview.length > 100, 'renderPreview slice must be bounded')
+  // The Latin line used to render at two thirds of the Arabic one, so the
+  // "live preview" disagreed with every page it was previewing.
+  assert.doesNotMatch(preview, /0\.66|- 0\.15/)
+  assert.match(preview, /for \(const line of \[elements\.previewArabic, elements\.previewEnglish\]\)/)
+})
+
+test('letter-spacing says what it can actually do', () => {
+  // Chromium never tracks a joined script, so the control is inert for Arabic.
+  const control = popupHtml.slice(
+    popupHtml.indexOf('for="letter-spacing"'),
+    popupHtml.indexOf('id="letter-spacing-output"'),
+  )
+  assert.match(control, /<small>[^<]*اللاتيني/)
 })

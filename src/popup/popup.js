@@ -63,7 +63,6 @@ const elements = {
   previewEnglish: document.querySelector('#preview-english'),
   openOptions: document.querySelector('#open-options'),
   resetSettings: document.querySelector('#reset-settings'),
-  resetLabel: document.querySelector('#reset-label'),
 }
 
 let state = {
@@ -74,7 +73,6 @@ let state = {
   reason: 'protected',
   readingRootFound: null,
   settings: { ...DEFAULT_SETTINGS },
-  siteSettings: {},
   siteOverride: {},
   siteRule: null,
   exclusions: [],
@@ -178,12 +176,20 @@ function getCurrentExclusionState() {
 }
 
 /**
- * The popup always edits the global settings. Per-site overrides live in
- * «إدارة المواقع», where they can be reviewed and saved deliberately — a scope
- * switch here made every control silently mean two different things.
+ * Which stored rule the controls are actually editing. There is no scope
+ * *switch* — that made every control silently mean two things — but when a site
+ * rule already governs this tab, editing the global settings would be a no-op
+ * the panel then reported as «تم الحفظ». This is the same rule the keyboard
+ * shortcuts have always written to; the panel now says so out loud.
  */
+function governingScope() {
+  const rule = state.siteRule && Object.keys(state.siteOverride).length ? state.siteRule : null
+  return { scope: rule ? 'site' : 'global', rule }
+}
+
+/** What the page is really rendering with: global settings plus any site rule. */
 function getScopeDraft() {
-  return sanitizeSettings(state.settings)
+  return mergeSettings(state.settings, state.siteOverride)
 }
 
 /**
@@ -239,19 +245,33 @@ function describePageState() {
       footer: 'وضع القراءة بلا مقال',
     }
   }
+  const governing = governingScope()
+  if (governing.rule) {
+    return {
+      tone: 'scoped',
+      notice: governing.rule === state.hostname
+        ? `القيم أدناه هي قاعدة ${governing.rule} الخاصة، وتعديلاتك هنا تُحفظ فيها لا في الإعداد العام.`
+        : `تحكم هذه الصفحةَ قاعدةُ ${governing.rule}؛ القيم أدناه هي قيمها، وتعديلاتك هنا تُحفظ فيها.`,
+      footer: `يحكمها ${governing.rule}`,
+    }
+  }
   return { tone: 'active', notice: '', footer: 'مفعّل حاليًا في هذا التبويب' }
 }
 
+/**
+ * The panel calls this «معاينة مباشرة», so both lines carry the same size and
+ * leading the page will use. Rendering the Latin line at two thirds of the
+ * Arabic one made the preview disagree with every page it was previewing.
+ */
 function renderPreview() {
-  const scaledSize = Math.max(14, Math.min(22, 14 + (Number(draft.fontSize) - 10) * 0.36))
+  const scaledSize = Math.max(13, Math.min(21, 13 + (Number(draft.fontSize) - 10) * 0.36))
   elements.previewArabic.style.fontFamily = PREVIEW_FONT_STACKS[draft.arabicFont]
   elements.previewEnglish.style.fontFamily = PREVIEW_FONT_STACKS[draft.englishFont]
-  elements.previewArabic.style.fontSize = `${scaledSize}px`
-  elements.previewEnglish.style.fontSize = `${Math.max(11, scaledSize * 0.66)}px`
-  elements.previewArabic.style.lineHeight = String(draft.lineHeight)
-  elements.previewEnglish.style.lineHeight = String(Math.max(1.25, draft.lineHeight - 0.15))
-  elements.previewArabic.style.letterSpacing = `${draft.letterSpacing}em`
-  elements.previewEnglish.style.letterSpacing = `${draft.letterSpacing}em`
+  for (const line of [elements.previewArabic, elements.previewEnglish]) {
+    line.style.fontSize = `${scaledSize}px`
+    line.style.lineHeight = String(draft.lineHeight)
+    line.style.letterSpacing = `${draft.letterSpacing}em`
+  }
 }
 
 function render() {
@@ -313,6 +333,7 @@ function render() {
   elements.siteLabel.textContent = state.hostname || 'صفحة داخلية'
   elements.tabStatus.textContent = page.footer
   elements.notice.hidden = !page.notice
+  elements.notice.dataset.tone = page.tone === 'scoped' ? 'info' : 'warn'
   elements.noticeText.textContent = page.notice
 
   renderPreview()
@@ -398,7 +419,6 @@ async function loadState() {
       ...state,
       ...context,
       settings: sanitizeSettings(response.settings),
-      siteSettings: sanitizeSiteSettings(response.siteSettings),
       siteOverride: response.siteOverride || {},
       siteRule: response.siteRule ?? null,
       exclusions: sanitizeExclusions(response.exclusions),
@@ -417,14 +437,19 @@ function updateLocalSetting(key, value) {
   render()
 }
 
-function queuePatch(patch, { immediate = false, scope = 'global' } = {}) {
+function queuePatch(patch, { immediate = false, scope = null } = {}) {
   if (!hasChromeApi()) return
 
-  if (pendingSave && pendingSave.scope !== scope) void flushSave()
+  const governing = governingScope()
+  const target = scope ?? governing.scope
+  const hostname = target === 'site' ? governing.rule : state.hostname
+  if (pendingSave && (pendingSave.scope !== target || pendingSave.hostname !== hostname)) {
+    void flushSave()
+  }
   pendingSave = {
-    scope,
-    hostname: state.hostname,
-    patch: { ...(pendingSave?.scope === scope ? pendingSave.patch : {}), ...patch },
+    scope: target,
+    hostname,
+    patch: { ...(pendingSave?.scope === target ? pendingSave.patch : {}), ...patch },
   }
   setSaveState('جارٍ الحفظ…', 'saving')
   window.clearTimeout(saveTimer)
@@ -453,7 +478,6 @@ async function flushSave() {
       if (request.scope === 'global') {
         state.settings = sanitizeSettings(response.settings ?? state.settings)
       } else if (request.hostname) {
-        state.siteSettings = sanitizeSiteSettings(response.siteSettings ?? state.siteSettings)
         state.siteOverride = response.siteOverride ?? state.siteOverride
         state.siteRule = request.hostname
       }
@@ -557,9 +581,11 @@ function bindSiteControls() {
 
   elements.resetSettings.addEventListener('click', async () => {
     if (!hasChromeApi()) return
-    // Say exactly what this resets: the worker never touches site rules here.
-    const question =
-      'إعادة الإعداد العام إلى القيم الافتراضية؟ لن تتأثر إعدادات المواقع الخاصة أو الاستثناءات.'
+    // Reset the scope the panel is editing, and say exactly which that is.
+    const governing = governingScope()
+    const question = governing.rule
+      ? `إزالة قاعدة ${governing.rule} الخاصة بالمواقع، فيعود هذا الموقع إلى الإعداد العام؟`
+      : 'إعادة الإعداد العام إلى القيم الافتراضية؟ لن تتأثر إعدادات المواقع الخاصة أو الاستثناءات.'
     if (!window.confirm(question)) return
 
     await flushSave()
@@ -567,7 +593,8 @@ function bindSiteControls() {
     try {
       const response = await chrome.runtime.sendMessage({
         type: MESSAGE.resetSettings,
-        scope: 'global',
+        scope: governing.scope,
+        hostname: governing.rule ?? state.hostname,
       })
       if (!response?.ok) throw new Error(response?.error || 'تعذّرت الاستعادة')
       await loadState()

@@ -794,12 +794,6 @@ fieldset:disabled input {
 }
 
 .range-label,
-.range-control {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
 .range-label output {
   min-width: 66px;
   padding: var(--space-2) var(--space-4);
@@ -813,6 +807,9 @@ fieldset:disabled input {
 }
 
 .range-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-5);
   margin-top: var(--space-6);
   color: var(--text-muted);
@@ -1168,4 +1165,9 @@ input[type="range"] {
 .page-footer__link:hover {
   background: var(--accent-wash);
   text-decoration: underline;
+}
+
+.page-footer__link:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
 }

@@ -167,6 +167,25 @@
    * Wikipedia article is 79%.
    */
   const MINIMUM_PROSE_RATIO = 0.45
+  /**
+   * The reading measure, derived in px from the target size instead of written
+   * as `72ch` into the rule. `ch` resolves against *each element's own* font, so
+   * a single CSS rule used to hand a heading, a paragraph and a pull quote three
+   * different widths on one page. 0.625em is what the bundled faces resolve
+   * `1ch` to, so the px result matches what 1.3 produced for body prose.
+   */
+  const BASE_MEASURE_CH = 72
+  const CH_PER_EM = 0.625
+  /** How long a viewport resize is allowed to settle before re-measuring. */
+  const RESIZE_SETTLE_MS = 180
+
+  const OBSERVER_OPTIONS = Object.freeze({
+    childList: true,
+    subtree: true,
+    characterData: true,
+    attributes: true,
+    attributeFilter: ['class', 'style', 'dir'],
+  })
 
   const pendingRoots = new Set()
   const pendingInvalidations = new Set()
@@ -175,6 +194,8 @@
   /** Last size we wrote per element, so a wiped style attribute can self-heal. */
   const appliedSizes = new WeakMap()
   const documentFontFamilies = new Map()
+  /** Open shadow roots the engine has adopted a stylesheet into. */
+  const shadowRoots = new Set()
 
   let settings = { ...DEFAULTS }
   let excluded = false
@@ -189,8 +210,14 @@
   let typographyRefreshTimer = null
   let settingsReloadTimer = null
   let settingsGeneration = 0
+  let shadowStyleSheet = null
+  let resizeTimer = null
 
   const now = () => (globalThis.performance?.now?.() ?? Date.now())
+
+  /** Mirrors HOSTNAME_PATTERN in src/shared/settings.js. */
+  const HOSTNAME_PATTERN =
+    /^(?:\[[0-9a-f:.]+\]|[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)*)$/
 
   function normalizeHostname(value) {
     if (typeof value !== 'string') return ''
@@ -199,7 +226,8 @@
       const hostname = raw.includes('://')
         ? new URL(raw).hostname
         : new URL(`https://${raw}`).hostname
-      return hostname.replace(/^www\./, '').replace(/\.$/, '')
+      const normalized = hostname.replace(/^www\./, '').replace(/\.$/, '')
+      return HOSTNAME_PATTERN.test(normalized) ? normalized : ''
     } catch {
       return ''
     }
@@ -342,13 +370,21 @@
         }
       `
       : ''
-    // The measure is applied to the prose blocks, never to the root container.
-    // Narrowing a container can collapse a grid it happens to own; narrowing a
-    // paragraph can only ever make that paragraph shorter.
+    // The measure lands on the prose blocks, never on the root container:
+    // narrowing a container can collapse a grid it happens to own, while
+    // narrowing a paragraph can only ever make that paragraph shorter.
+    //
+    // One measure for every prose block. Written in px, not ch: `ch` resolves
+    // against each element's own font size, so the same rule handed a heading a
+    // measure two and a half times wider than the paragraph beneath it and the
+    // two edges never lined up. `border-box` keeps a padded pull quote inside
+    // the same column as an unpadded paragraph.
+    const measurePx = BASE_MEASURE_CH * (settings.textWidth / 100) * settings.fontSize * CH_PER_EM
     const readingCss = settings.mode === 'reading'
       ? `
         .snfont-active [${READING_ROOT_MARKER}] [${PROSE_MARKER}="1"] {
-          max-width: ${(72 * settings.textWidth / 100).toFixed(2)}ch !important;
+          max-width: ${measurePx.toFixed(2)}px !important;
+          box-sizing: border-box !important;
           margin-inline: auto !important;
         }
         ${visualNoiseCss}
@@ -367,17 +403,29 @@
       }
       .snfont-active [${MARKER}="1"] {
         font-family: "SnFont Smart", ${cssString(settings.englishFont)}, ${cssString(settings.arabicFont)}, sans-serif !important;
-        letter-spacing: ${settings.letterSpacing}em !important;
       }
-      /* Size and leading reflow their container, so they are confined to prose
-         blocks. Applying them to buttons, nav items and badges is what used to
-         break application layouts. */
+      /* Anything that reflows its container is confined to prose blocks.
+         Applying them to buttons, nav items and badges is what used to break
+         application layouts — letter-spacing included: at 0.2em it widened a
+         badge by 35% and a table cell by 52% while doing nothing at all for
+         Arabic, which the browser never tracks because the script is joined. */
       .snfont-active [${PROSE_MARKER}="1"] {
         font-size: var(${TARGET_SIZE_PROPERTY}, ${settings.fontSize}px) !important;
         line-height: ${settings.lineHeight} !important;
+        letter-spacing: ${settings.letterSpacing}em !important;
       }
       ${readingCss}
     `
+  }
+
+  /**
+   * Shadow trees never see the document's stylesheets, and the `.snfont-active`
+   * hook lives on <html>, outside every shadow boundary. Deriving the sheet from
+   * buildCss() by dropping that hook means the two can never drift; the sheet is
+   * only adopted while the engine is on, so the markers alone are enough.
+   */
+  function buildShadowCss() {
+    return buildCss().replaceAll('.snfont-active ', '')
   }
 
   function primaryFamilyOf(fontFamily) {
@@ -408,17 +456,24 @@
     return /,\s*monospace\s*$/.test(stack)
   }
 
+  /**
+   * `<nav>` and `<aside>` are always site chrome. A `<header>` or `<footer>` is
+   * only site chrome when it sits *outside* the page's content root: the one
+   * nested inside `<main>`/`<article>` holds the headline and byline, which are
+   * the article, not the furniture around it. Wikipedia is the plain case — its
+   * `<h1>` lives in `header.mw-body-header` inside `<main>`, so the title used to
+   * keep the site's serif while every paragraph under it changed face.
+   * Page-level landmarks keep their protection wherever they sit.
+   */
   function isInsideUiBoundary(element) {
     const boundary = element.closest(UI_ANCESTORS)
     if (!boundary) return false
-    const isArticleChrome =
-      settings.mode === 'reading' &&
-      readingRoot?.matches(ARTICLE_SELECTOR) &&
-      readingRoot.contains(boundary) &&
-      (boundary.tagName === 'HEADER' || boundary.tagName === 'FOOTER') &&
-      !boundary.matches('[role="banner"]') &&
-      boundary.closest(ARTICLE_SELECTOR) === readingRoot
-    return !isArticleChrome
+    if (boundary.tagName !== 'HEADER' && boundary.tagName !== 'FOOTER') return true
+    if (boundary.matches('[role="banner"], [role="contentinfo"], [data-snfont-ignore]')) return true
+    if (!boundary.closest(ROOT_CANDIDATE_SELECTOR)) return true
+    // In reading mode only the article actually being read counts.
+    if (settings.mode === 'reading') return !readingRoot || !readingRoot.contains(boundary)
+    return false
   }
 
   function eligibleElement(element, computedStyle) {
@@ -497,20 +552,64 @@
     else applyTypography(sourceElement, text, false)
   }
 
+  /**
+   * One walker covers both jobs: text nodes to restyle, and elements that own an
+   * open shadow root. A TreeWalker stops at every shadow boundary, so without
+   * this pass the text inside a web component was never seen at all.
+   */
   function createScanTask(root) {
     if (root.nodeType === Node.TEXT_NODE) return { textNode: root }
-    if (!(root instanceof Element) && root !== document) return null
+    const isFragment = root instanceof ShadowRoot
+    if (!(root instanceof Element) && !isFragment && root !== document) return null
     if (root instanceof Element && SKIP_TAGS.has(root.tagName)) return null
 
     return {
-      walker: document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      walker: document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
         acceptNode(node) {
-          return node.nodeValue?.trim()
-            ? NodeFilter.FILTER_ACCEPT
-            : NodeFilter.FILTER_REJECT
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            return node.shadowRoot ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
+          }
+          return node.nodeValue?.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_SKIP
         },
       }),
     }
+  }
+
+  /**
+   * Adopts the engine's stylesheet into an open shadow root and starts watching
+   * it. Closed roots are unreachable by design, and a root whose host already
+   * sits in skipped or chrome territory inherits that decision.
+   */
+  function adoptShadowRoot(shadowRoot) {
+    if (!shadowRoot || shadowRoots.has(shadowRoot) || !styleElement) return
+    const host = shadowRoot.host
+    if (!(host instanceof HTMLElement)) return
+    if (host.closest(HARD_SKIP_ANCESTORS) || isInsideUiBoundary(host)) return
+
+    shadowRoots.add(shadowRoot)
+    if (!shadowStyleSheet) shadowStyleSheet = new CSSStyleSheet()
+    shadowStyleSheet.replaceSync(buildShadowCss())
+    if (!shadowRoot.adoptedStyleSheets.includes(shadowStyleSheet)) {
+      shadowRoot.adoptedStyleSheets = [...shadowRoot.adoptedStyleSheets, shadowStyleSheet]
+    }
+    observer?.observe(shadowRoot, OBSERVER_OPTIONS)
+    queueScan(shadowRoot)
+  }
+
+  function releaseShadowRoots() {
+    for (const shadowRoot of shadowRoots) {
+      shadowRoot.querySelectorAll(`[${MARKER}]`).forEach(clearTextMarker)
+      shadowRoot.adoptedStyleSheets = shadowRoot.adoptedStyleSheets
+        .filter((sheet) => sheet !== shadowStyleSheet)
+    }
+    shadowRoots.clear()
+  }
+
+  /** Every element the engine has marked, document and shadow trees alike. */
+  function markedElements(selector = `[${MARKER}]`) {
+    const found = [...document.querySelectorAll(selector)]
+    for (const shadowRoot of shadowRoots) found.push(...shadowRoot.querySelectorAll(selector))
+    return found
   }
 
   function scheduleScan(delay = 120) {
@@ -584,6 +683,9 @@
 
     for (const root of pendingRoots) {
       if (root === document || root.isConnected) {
+        // A TreeWalker never emits its own root, so a newly inserted custom
+        // element would hide its shadow root from the walk it starts.
+        if (root instanceof Element && root.shadowRoot) adoptShadowRoot(root.shadowRoot)
         const task = createScanTask(root)
         if (task) scanTasks.push(task)
       }
@@ -599,7 +701,8 @@
         scanTasks.shift()
         continue
       }
-      markTextParent(node)
+      if (node.nodeType === Node.ELEMENT_NODE) adoptShadowRoot(node.shadowRoot)
+      else markTextParent(node)
       if (task.textNode) scanTasks.shift()
       processed += 1
       // Checking the clock per node costs more than the work it guards.
@@ -639,6 +742,8 @@
     readingRootDirty = false
     if (typographyRefreshTimer !== null) clearTimeout(typographyRefreshTimer)
     typographyRefreshTimer = null
+    if (resizeTimer !== null) clearTimeout(resizeTimer)
+    resizeTimer = null
   }
 
   function clearTextMarker(element) {
@@ -660,12 +765,83 @@
     queueScan(root)
   }
 
+  /**
+   * Re-derives everything that depends on the page's own metrics — the base size
+   * and every prose block's target size — without unmarking anything.
+   *
+   * The root class comes off for the measuring pass so the engine reads the
+   * site's real sizes instead of the ones it wrote itself, then goes straight
+   * back on. It all runs inside one task, so nothing repaints in between: this
+   * is the difference between re-tuning a page and the teardown-and-rescan that
+   * used to flash every settings change back to the original type and cost a
+   * ~0.6s main-thread block on a large document.
+   */
+  function remeasureTypography({ revalidate = false } = {}) {
+    if (!styleElement || !document.documentElement) return
+    const root = document.documentElement
+    const wasActive = root.classList.contains(ROOT_CLASS)
+    if (wasActive) root.classList.remove(ROOT_CLASS)
+
+    const computedBaseSize = Number.parseFloat(getComputedStyle(document.body || root).fontSize)
+    pageBaseFontSize = Number.isFinite(computedBaseSize) && computedBaseSize > 0
+      ? computedBaseSize
+      : 16
+
+    const nowProtected = []
+    const resized = []
+    for (const element of markedElements()) {
+      const computedStyle = getComputedStyle(element)
+      // A page stylesheet can turn text into an icon or a code face after the
+      // fact, and that is the one eligibility answer a restyle can change.
+      if (revalidate && isProtectedTypography(computedStyle)) {
+        nowProtected.push(element)
+        continue
+      }
+      if (element.getAttribute(PROSE_MARKER) !== '1') continue
+      const computedSize = Number.parseFloat(computedStyle.fontSize)
+      const originalSize = Number.isFinite(computedSize) ? computedSize : pageBaseFontSize
+      resized.push([
+        element,
+        `${(originalSize * (settings.fontSize / referenceFontSize(element))).toFixed(3)}px`,
+      ])
+    }
+
+    if (wasActive) root.classList.add(ROOT_CLASS)
+    for (const element of nowProtected) clearTextMarker(element)
+    for (const [element, size] of resized) {
+      element.style.setProperty(TARGET_SIZE_PROPERTY, size)
+      appliedSizes.set(element, size)
+    }
+  }
+
+  /** The page's own CSS moved: re-check what is eligible, keep what still is. */
+  function refreshTypography() {
+    if (!styleElement) {
+      apply()
+      return
+    }
+    remeasureTypography({ revalidate: true })
+    // A restyle can also make text eligible that was skipped a moment ago.
+    queueScan(settings.mode === 'reading'
+      ? (readingRoot ?? document.body ?? document.documentElement)
+      : (document.body || document.documentElement))
+  }
+
   function scheduleTypographyRefresh() {
     if (typographyRefreshTimer !== null) return
     typographyRefreshTimer = setTimeout(() => {
       typographyRefreshTimer = null
-      apply()
+      refreshTypography()
     }, 240)
+  }
+
+  /** A viewport change moves the page's own type; the targets must follow it. */
+  function scheduleRemeasure() {
+    if (resizeTimer !== null) clearTimeout(resizeTimer)
+    resizeTimer = setTimeout(() => {
+      resizeTimer = null
+      remeasureTypography()
+    }, RESIZE_SETTLE_MS)
   }
 
   function trackStylesheets(node) {
@@ -695,6 +871,7 @@
     // every marked node just to catch one detached at this instant would leak
     // memory on long-lived single-page apps, which is the worse trade.
     document.querySelectorAll(`[${MARKER}]`).forEach(clearTextMarker)
+    releaseShadowRoots()
     documentFontFamilies.clear()
     styleElement?.remove()
     styleElement = null
@@ -805,6 +982,35 @@
     startObserver()
   }
 
+  /**
+   * Applies a new effective configuration. Only a change that alters *which*
+   * elements the engine touches needs the full teardown-and-rescan; changing the
+   * values themselves is a stylesheet rewrite plus an in-place re-measure. That
+   * is why dragging a slider no longer strips and repaints the whole page four
+   * times a second.
+   */
+  function commitSettings(nextSettings, nextExcluded) {
+    const previous = settings
+    const wasExcluded = excluded
+    const wasStyled = Boolean(styleElement)
+    settings = nextSettings
+    excluded = nextExcluded
+
+    const structural =
+      !wasStyled ||
+      settings.enabled !== previous.enabled ||
+      excluded !== wasExcluded ||
+      settings.mode !== previous.mode
+    if (structural) {
+      apply()
+      return
+    }
+
+    styleElement.textContent = buildCss()
+    if (shadowStyleSheet && shadowRoots.size) shadowStyleSheet.replaceSync(buildShadowCss())
+    if (settings.fontSize !== previous.fontSize) remeasureTypography()
+  }
+
   function isInReadingScope(node) {
     return Boolean(readingRoot && (node === readingRoot || readingRoot.contains(node)))
   }
@@ -890,13 +1096,8 @@
         if (readingRootDirty) scheduleScan()
       }
     })
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ['class', 'style', 'dir'],
-    })
+    observer.observe(document.documentElement, OBSERVER_OPTIONS)
+    for (const shadowRoot of shadowRoots) observer.observe(shadowRoot, OBSERVER_OPTIONS)
   }
 
   async function loadSettings() {
@@ -918,9 +1119,7 @@
     // apply() stays outside the try: a fault in the engine must surface, not be
     // mistaken for an unreachable worker and answered with default settings.
     if (response?.ok) {
-      settings = sanitize(response.effectiveSettings)
-      excluded = Boolean(response.excluded)
-      apply()
+      commitSettings(sanitize(response.effectiveSettings), Boolean(response.excluded))
       return
     }
 
@@ -930,19 +1129,18 @@
     const exclusions = Array.isArray(stored[STORAGE.exclusions])
       ? stored[STORAGE.exclusions]
       : []
-    excluded = exclusions.some((rule) => hostnameMatches(host, rule))
+    const isExcluded = exclusions.some((rule) => hostnameMatches(host, rule))
     const siteSettings = stored[STORAGE.siteSettings] || {}
     const matchingSite = Object.keys(siteSettings)
       .filter((rule) => hostnameMatches(host, rule))
       .sort((a, b) => b.length - a.length)[0]
     const globalSettings = sanitize(stored[STORAGE.settings])
-    settings = sanitize({
+    commitSettings(sanitize({
       ...globalSettings,
       ...(matchingSite ? siteSettings[matchingSite] : {}),
       enabled: globalSettings.enabled && siteSettings[matchingSite]?.enabled !== false,
-      ...(excluded ? { enabled: false } : {}),
-    })
-    apply()
+      ...(isExcluded ? { enabled: false } : {}),
+    }), isExcluded)
   }
 
   function scheduleSettingsReload() {
@@ -976,6 +1174,11 @@
       scheduleSettingsReload()
     }
   })
+
+  // A breakpoint, an orientation change or a `clamp()` size moves the page's own
+  // type without touching the DOM, so nothing else would ever tell the engine
+  // that the ratio it pinned is now wrong.
+  window.addEventListener('resize', scheduleRemeasure, { passive: true })
 
   void loadSettings()
 })()

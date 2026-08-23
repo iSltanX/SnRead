@@ -17,6 +17,6 @@ zip -q -r "$archive" \
   assets/fonts \
   assets/icons \
   src \
-  -x '.DS_Store' '*/.DS_Store' '*/README.md'
+  -x '.DS_Store' '*/.DS_Store' '*/README.md' 'assets/icons/logo-28.png'
 
 echo "Created $archive"
