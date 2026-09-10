@@ -1,6 +1,7 @@
 {
   "name": "snread-brave-extension",
   "version": "1.6.0",
+  "license": "MIT",
   "private": true,
   "type": "module",
   "description": "SnRead smart Arabic and English reading assistant for Brave and Chromium browsers.",
