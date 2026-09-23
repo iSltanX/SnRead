@@ -400,7 +400,7 @@ function renderCommitBar() {
   const dirty = isDirty()
   const governing = governingScope()
 
-  // Read by the QA scripts and by docs/QA.md; no stylesheet depends on it.
+  // Read by the QA scripts; no stylesheet depends on it.
   elements.app.dataset.dirty = String(dirty)
   // The row stays in layout at all times — see the CSS comment on .commit-bar.
   // Popping it in and out with `hidden` shrank the scroll region by 44px in the

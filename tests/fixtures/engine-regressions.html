@@ -13,7 +13,7 @@
       Drives the 1.2 page-engine fixes in a real browser (the project has no DOM
       dependency, so these cannot run under node:test). Serve the repository with
       `npm run harness` and open this file; the three checks below are driven by
-      hand from the console, and by the Playwright suite described in docs/QA.md.
+      hand from the console, and by the Playwright suite in tests/playwright.
 
         1. a class toggle on <body> must not unmark and rescan the whole page
         2. a wholesale style-attribute rewrite must restore the per-element size

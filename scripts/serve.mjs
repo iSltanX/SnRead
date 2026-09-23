@@ -1,5 +1,5 @@
 /**
- * Static file server for the local QA harness — see docs/QA.md.
+ * Static file server for the local QA harness (`npm run harness`).
  *
  *   npm run harness
  *   http://localhost:8931/tests/harness/popup.html

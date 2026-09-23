@@ -96,7 +96,7 @@ await worker.evaluate(async (settings) => {
 }, BASE_SETTINGS)
 
 /* A real tab on a real host, then the popup, then focus back — the ordering
-   docs/QA.md §6 documents, so the panel reads the site tab and not itself. */
+   the QA notes documented, so the panel reads the site tab and not itself. */
 const site = await context.newPage()
 await site.goto('http://demo.example/')
 await site.waitForTimeout(900)

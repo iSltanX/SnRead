@@ -7,7 +7,7 @@
  * injected as inline SVG and stroked with `currentColor`, so they follow the
  * colour of the control they sit in — no per-theme filters, no baked hex values.
  *
- * Geometry follows the Lucide icon set (ISC licence); see assets/icons/README.md.
+ * Geometry follows the Lucide icon set (https://lucide.dev, ISC licence).
  */
 
 export const ICON_PATHS = Object.freeze({
