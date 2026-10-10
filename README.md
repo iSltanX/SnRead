@@ -179,7 +179,7 @@
 
 الموقع: [bysltan.com](https://www.bysltan.com)
 
-للتواصل: [iSultanby@gmail.com](mailto:iSultanby@gmail.com)
+للتواصل: [S@BySltan.com](mailto:S@BySltan.com)
 
 من الصانع نفسه<br>
 إضافات المتصفح: [صَوْب](https://github.com/iSltanX/SAWB) · [جسور](https://github.com/iSltanX/Jusoor)<br>
