@@ -43,10 +43,10 @@
 
 ## الميزات
 
-- **خط لكل لغة.** العربية بخط Noto Sans Arabic أو Cairo أو Almarai، والإنجليزية بخط Inter أو SF Pro أو Helvetica.
+- **خط لكل لغة.** العربية بخط Noto Sans Arabic أو Cairo أو Almarai، والإنجليزية بخط Inter، أو بخطي النظام SF Pro وHelvetica إن وُجدا على الجهاز.
 - **التخطيط لا يتحرك.** يتغيّر الخط في نص الموقع، أما الحجم والتباعد ففي فقرات النثر وحدها، فتبقى الأزرار والشارات والجداول بمقاساتها.
 - **لا يلمس ما لا يخصّه.** الحقول والمحررات والأزرار والشفرة وخطوط الأيقونات والتنقل وترويسة الموقع تبقى كما هي.
-- **وضعان.** وضع التصميم المحافظ، ووضع القراءة الذي يرفض الصفحات التي لا تحوي مقالًا حقيقيًا.
+- **وضعان.** وضع التصميم المحافظ، ووضع القراءة الذي يرفض الصفحات التي لا تحوي مقالًا حقيقيًا، ويضيف ضبط عرض مساحة النص وتهدئة العناصر الثانوية داخل المقال.
 - **قواعد لكل موقع.** استثناءات وتخصيصات لكل نطاق، ونسخة احتياطية بصيغة JSON.
 - **لا يغيّر الألوان.** المظهر الفاتح والداكن يخصّان واجهة SnRead وحدها، لا الموقع.
 
@@ -96,7 +96,7 @@
 
 - **إذنان فقط:** <span dir="ltr">`storage`</span> لحفظ الإعدادات محليًا، و<span dir="ltr">`activeTab`</span> الذي يمنحه المتصفح لحظة فتح اللوحة أو ضغط اختصار، لمعرفة عنوان التبويب الحالي وحده.
 - **لا شبكة:** لا يرسل شيئًا من الصفحات أو التصفح أو الإعدادات إلى أي خادم، ولا تحليلات ولا تتبّع.
-- **الخطوط مضمَّنة** في الإضافة، ولا يُحمَّل شيء من الإنترنت.
+- **الخطوط مضمَّنة** في الإضافة (عدا SF Pro وHelvetica فمن خطوط الجهاز)، ولا يُحمَّل شيء من الإنترنت.
 
 التفاصيل، ومنها ما تستطيع الصفحة نفسها ملاحظته، في [PRIVACY.md](PRIVACY.md).
 
@@ -153,21 +153,23 @@
 <details>
 <summary><b>الفحص والحزم</b></summary><br>
 
-لا اعتماديات ولا خطوة بناء. الفحص يحتاج Node.js 20 أو أحدث.
+لا اعتماديات ولا خطوة بناء، فلا حاجة إلى <span dir="ltr">`npm install`</span>. الفحص يحتاج Node.js 20.11 أو أحدث.
 
 | الأمر | ما يفعله |
 | --- | --- |
 | <span dir="ltr">`npm run verify`</span> | فحص الملفات، ثم الاختبارات |
 | <span dir="ltr">`npm run package`</span> | ينشئ <span dir="ltr">`dist/snread-<version>.zip`</span> |
-| <span dir="ltr">`npm run harness`</span> | صفحات تجربة محلية للمحرك واللوحة |
-| <span dir="ltr">`npm run qa:browser`</span> | اختبارات Playwright في متصفح حقيقي |
+| <span dir="ltr">`npm run harness`</span> | صفحات تجربة محلية للمحرك واللوحة على <span dir="ltr">`http://localhost:8931`</span> |
+| <span dir="ltr">`npm run qa:browser`</span> | اختبارات Playwright في Chromium حقيقي محمَّلة فيه الإضافة |
+
+اختبارات المتصفح تبحث عن Playwright في الجهاز لأن المشروع لا يثبّته: نفّذ <span dir="ltr">`npx playwright@latest install chromium`</span> مرة واحدة، أو مرّر مسار <span dir="ltr">`playwright/index.js`</span> في <span dir="ltr">`PLAYWRIGHT_PATH`</span>.
 
 القيم الافتراضية في <span dir="ltr">`src/shared/settings.js`</span>. وسكربت المحتوى لا يستطيع استيراد <span dir="ltr">`src/shared/*`</span> في Manifest V3، فيكرر العقد داخليًا، ويقارن <span dir="ltr">`tests/contract.test.mjs`</span> النسختين تلقائيًا. سجل التغييرات في [CHANGELOG.md](CHANGELOG.md).
 </details>
 
 ## الرخصة
 
-مرخَّص بـ[MIT](LICENSE). الخطوط من Google Fonts برخصة SIL Open Font License 1.1، ونصوصها في [assets/fonts/licenses](assets/fonts/licenses). وهندسة أيقونات الواجهة مبنية على مجموعة [Lucide](https://lucide.dev) بترخيص ISC.
+مرخَّص بـ[MIT](LICENSE). الخطوط المضمَّنة (Noto Sans Arabic وCairo وAlmarai وInter) من Google Fonts برخصة SIL Open Font License 1.1، ونصوصها في [assets/fonts/licenses](assets/fonts/licenses) وتُشحن داخل الإضافة. وهندسة أيقونات الواجهة مبنية على مجموعة [Lucide](https://lucide.dev) بترخيص ISC.
 
 ---
 

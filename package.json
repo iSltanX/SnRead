@@ -14,6 +14,6 @@
     "qa:browser": "node tests/playwright/site-manager.spec.mjs && node tests/playwright/popup-save.spec.mjs"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20.11"
   }
 }
